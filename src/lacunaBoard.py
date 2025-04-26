@@ -1,0 +1,284 @@
+import random
+import math
+import matplotlib.pyplot as plt
+import numpy as np
+import networkx as nx
+from scipy.spatial import Voronoi, voronoi_plot_2d
+
+
+class LacunaBoard:
+    def __init__(self, flowerList, radius=1.0):
+        # Game Constants
+        self.flowerCount = 7 # there are x of each token, in x types ()
+        self.radius = radius # Circle that the tokens are all in. For plotting only
+        self.precision = 0.1 # Precision for the game (how exact tokens should be, or how close they should be to the flowers to count as "on" the flower)
+
+        # Flower tokens (the game pieces)
+        self.flowerPositions_initial = flowerList # Where all the game pices were at the start
+        self.flowerPositions_active = flowerList # Where all the game pieces are now
+
+        # Flower graph
+        self.flowerGraph = nx.Graph() # Graph of the flower positions
+        self.flowerGraph.add_nodes_from(self.flowerPositions_active) # Add the flower positions to the graph
+        self.find_potential_moves() # Find the potential moves for the game
+
+        # User data
+        self.isPlayerATurn = True # True if player A's turn (False for player B)
+        self.userFlowers = np.zeros((2, self.flowerCount)) # a count of the tokens the user has claimed
+        self.userTokenPositions = np.full((2, 6, 2), np.nan)  # Shape: (2 players, 6 tokens each, 2 coordinates)
+
+
+    # Interact with the game
+    def _place_user_token(self, player, x, y):
+        '''Add one of the users pieces,
+        remove the two colinear flower and give them to the user.
+        Place a token for the specified player at (x, y).'''
+
+        #TODO remove colinear flowers from the graph, and give them to the user (in )
+        # Find the first available slot for the player
+        for i in range(self.userTokenPositions.shape[1]): # for each token
+            if np.isnan(self.userTokenPositions[player, i, 0]):  # Check if the slot is empty
+                self.userTokenPositions[player, i] = [x, y]
+
+                # check if the token intersects with a colinear flower pair
+                for edge in self.flowerGraph.edges():
+                    f1_id, f2_id = edge # Get the two flower IDs attached to the edge
+                    pos1 = self.flowerGraph.nodes[f1_id]['pos']
+                    pos2 = self.flowerGraph.nodes[f2_id]['pos']
+
+                    if self._does_token_intersect(pos1, pos2, (x, y)):
+                        # If the token intersects, remove the flower from the graph
+
+                        # Add the flower to the user's collection
+                        colorID = self.flowerGraph.nodes[f1_id]['colorID']
+                        self.userFlowers[player][colorID] += 2
+
+                        # Remove flower from graph
+                        self.flowerGraph.remove_node(f1_id)
+                        self.flowerGraph.remove_node(f2_id)
+
+                        # print(f"removed nodes {f1_id} and {f2_id}")
+
+                        self.find_potential_moves() # update graph with unblocked edges
+                        return
+
+                return
+
+
+    def take_turn(self, x, y):
+        '''Take a turn for the current player
+        Place a token for the current player at (x, y)'''
+
+        player = 0 if self.isPlayerATurn else 1
+        # print(f"Player {player} is taking a turn at ({x}, {y})")
+        self._place_user_token(player, x, y) # take the turn
+        self.isPlayerATurn = not self.isPlayerATurn # Switch turns
+
+
+    def _does_token_intersect(self, start, end, check):
+        '''Check if the line between start and end intersects with check position
+        All values are tuples of (x, y) coordinates
+        '''
+        x1, y1 = start
+        x2, y2 = end
+        px, py = check
+
+        # Check if the point lies within the segment bounds
+        if min(x1, x2) <= px <= max(x1, x2) and min(y1, y2) <= py <= max(y1, y2):
+            area = abs((x2 - x1) * (py - y1) - (px - x1) * (y2 - y1))
+            if area < self.precision: # Close to zero, meaning the point is collinear
+                return True
+        return False  # Check isn't collinear with start and end
+
+
+    def is_line_blocked(self, p1, p2):
+        '''Check if the line between points 1 & 2 is blocked
+        by any other token (flower or user
+        '''
+
+        #TODO update to check blockages for user too
+        for flower in self.flowerGraph.nodes(data=True):
+            if flower == p1 or flower == p2:
+                continue # Skip the two flowers being compared
+
+            # Check if the line intersects with the flower
+            if self._does_token_intersect(p1[1]['pos'], p2[1]['pos'], flower[1]['pos']):
+                return True
+        return False  # No flower blocks the line
+
+
+    # Calculate game features
+    def find_potential_moves(self):
+        '''Analyse the active game and calculate all possible edges a piece could be placed on
+
+        In the graph, check all the flowers with each other flower of the same color
+        and if a line can be drawn between them, without intersecting another flower
+        (i.e. if the line between them is not blocked by another flower)
+        add an edge between them
+        '''
+
+        # Iterate over all pairs of flowers of the same color
+        totalColourMatch = 0
+        edges = 0
+        for flower1 in self.flowerGraph.nodes(data=True):
+            id1, node1 = flower1
+            for flower2 in self.flowerGraph.nodes(data=True):
+                id2, node2 = flower2
+                if id1 >= id2: # Don't compare edges prior (duplicates) or self
+                    continue
+
+                if node1['color'] == node2['color']:  # Same color
+                    totalColourMatch +=1
+                    flowerBlocked = self.is_line_blocked(flower1, flower2)
+                    if not flowerBlocked:
+                        # Add an edge between the two flowers in the graph
+                        self.flowerGraph.add_edge(id1, id2)
+                        edges += 1
+
+        # print(f"of {totalColourMatch} potential edges, there are {edges}")
+
+
+    def current_winner(self):
+        '''Calculate the winner of the game at its current state
+        The winner is the person who collects more flowers in more colors
+        '''
+
+        pA = self.userFlowers[0] # Player 1's tokens
+        pB = self.userFlowers[1]
+
+        winnerPerColor = pA > pB # Calculate the winner for each color
+
+        # pA wins if there are more True values than False (sum > half)
+        pAIsWinner = sum(winnerPerColor) > len(winnerPerColor) / 2
+
+        return 0 if pAIsWinner else 1 # 0 = player A, 1 = player B
+
+
+    def is_game_finished(self):
+        '''Check if the game is finished.
+        The game is finished when both players have played their six tokens'''
+
+        return ~np.isnan(self.userTokenPositions[:, :, :]).any()
+
+
+    def calculate_winner(self) -> int:
+        '''return the game winner, either player 1 or 2.
+            Negative value if not finished'''
+        if self.is_game_finished():
+            return self.current_winner()
+        else:
+            return None # Game isn't finished -> no winner yet
+
+
+    # Display, visualisation methods
+    def view_board(self):
+        # Draw voranoi diagram and user moves
+
+        # if self.userTokenPositions is not None or len(self.userTokenPositions) > 0:
+        #     pointsXY = np.array([[x, y] for x,y,i in self.userTokenPositions])
+        #     v = Voronoi(pointsXY)
+        #     voronoi_plot_2d(v)
+
+        pos = nx.get_node_attributes(self.flowerGraph, 'pos')
+        colors = [data.get('color', 'black') for _, data in self.flowerGraph.nodes(data=True)]
+        nx.draw(self.flowerGraph, with_labels=True, pos=pos, node_color=colors)
+
+        boardCircle = plt.Circle((0, 0), self.radius, color='k', fill=False, linewidth=1, linestyle='-' )
+        plt.gca().add_patch(boardCircle)
+
+        # Add the user tokens to the plot
+        for player in range(2):
+            placed_tokens = self.userTokenPositions[player][~np.isnan(self.userTokenPositions[player, :, 0])]
+            # print(f"Player {player}'s tokens:\n{placed_tokens}")
+            playerColor = ['red', 'blue'] # Color of player token
+            plt.scatter(placed_tokens[:, 0], placed_tokens[:, 1], color=playerColor[player], marker='*', label=f"Player {player}")
+
+        plt.title("Lacuna Board")
+        plt.gca().set_aspect('equal')
+
+        ax = plt.gca()
+        ax.set_xlim([-(self.radius+0.05), (self.radius+0.05)])
+        ax.set_ylim([-(self.radius+0.05), (self.radius+0.05)])
+
+        plt.show()
+
+
+#given an int, return a string color
+def get_color(color):
+    colorString = ""
+    match color:
+        case 0: # Red
+            colorString = "#eb4034"
+        case 1: # Blue
+            colorString = "#6886e8"
+        case 2: # Cyan
+            colorString = "#5cedce"
+        case 3: # Yellow
+            colorString = "#c99100"
+        case 4: # Brown/green
+            colorString = "#3cc900"
+        case 5: # Pink
+            colorString = "#ff00ef"
+        case 6: # Purple
+            colorString = "#c50cba"
+        case _: #Unknown (Black)
+            colorString = "#000000"
+
+    return colorString
+
+
+# new Board with random data
+def new_random_lacuna_tokens(radius=1, minDistanceApart = 0.075, seed=None):
+    '''Create a new random list of tokens with size tokens of each color
+
+    Args:
+    - radius: float, radius of the circle
+    - minDistanceApart: float, minimum distance between tokens
+    - seed: int, random seed for reproducibility
+    '''
+
+    if seed is not None: # set the seed for reproducibility
+        random.seed(seed)
+
+    size = 7 # Number of colors/types of tokens
+    flowerPositions = []
+    flowerNodes = []
+
+    for i in range(size): # how many colors
+        for _ in range(size): # how many of each color
+
+            inCircle = False # is the token in the circle?
+            nearOther = True # are there other tokens nearby?
+
+            while not (inCircle and not nearOther):
+                x = random.uniform(-radius, radius)
+                y = random.uniform(-radius, radius)
+
+                inCircle = radius > math.sqrt(math.pow(x,2) + math.pow(y,2))
+                nearOther = any(math.sqrt((x - fx)**2 + (y - fy)**2) < minDistanceApart for fx, fy, _ in flowerPositions)
+
+            flowerPositions.append([x,y,i])
+            nodeDetails = {
+                'pos': (x, y),
+                'color': get_color(i),
+                'colorID': i,
+            }
+            flowerNodes.append((len(flowerPositions) - 1, nodeDetails))
+
+    return flowerNodes
+
+
+if __name__ == "__main__":
+    radius = 1
+    nodes = new_random_lacuna_tokens(radius=radius, seed = 70, minDistanceApart=0.09)
+
+    board = LacunaBoard(nodes, radius=radius)
+    board.view_board()
+    board.take_turn( 0.0, -0.5)
+    board.take_turn( 0.5,  0.7)
+    board.take_turn(-0.4,  0.2)
+    board.take_turn(-0.4, -0.3)
+    # print(f"{board.userTokenPositions}")
+    # print(f"{board.is_game_finished()}")
+
+    board.view_board()
