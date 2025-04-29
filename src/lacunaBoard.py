@@ -160,11 +160,32 @@ class LacunaBoard:
 
         return ~np.isnan(self.userTokenPositions[:, :, :]).any()
 
+    def _allocate_remaining_flowers(self):
+        '''When the tokens are all placed,
+        Each remaining flower is given to the player with the closest token
+        '''
+        if not self.is_game_finished():
+            return # Game isn't finished
+
+        # Iterate over all flowers in the graph and find the closest (euluclidean) user
+        for flower in self.flowerGraph.nodes(data=True):
+            flowerPos = flower[1]['pos']
+
+            # Calculate the distance to each player's tokens
+            closestA = np.min(np.linalg.norm(self.userTokenPositions[0, :, :] - flowerPos, axis=1))
+            closestB = np.min(np.linalg.norm(self.userTokenPositions[1, :, :] - flowerPos, axis=1))
+            closestPlayer = 0 if closestA < closestB else 1 # player A is closer if A < B
+
+            # Add the flower to the player's collection
+            colorID = flower[1]['colorID']
+            self.userFlowers[closestPlayer][colorID] += 1
+
 
     def calculate_winner(self) -> int:
         '''return the game winner, either player 1 or 2.
             Negative value if not finished'''
         if self.is_game_finished():
+            self._allocate_remaining_flowers()
             return self.current_winner()
         else:
             return None # Game isn't finished -> no winner yet
