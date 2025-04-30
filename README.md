@@ -20,11 +20,14 @@ Deactivate with `deactivate`
 List packages installed with `pip freeze -l` (local flag)
 
 ## Formats
-<!-- TODO update -->
-A "flower" is a token (note that the user placments aren't included) stored as a dictionary with the form **`{"pos": (x,y), "colour": color}`**
-- `pos` is the position, as an `(x,y)` tupple
-- `color` is an `int` (0 thru 6) representing which color the token is (we don't need to represent them as a string, `int` is easier)
-
+A "flower" is a token (note that the user placments aren't included) stored as a dictionary with the format:
+```py
+{
+    'pos': (x, y), #the position, as an `(x,y)` tupple
+    'color': HTMLColor, # a string, with the colour in a matplotlib format
+    'colorID': intColour # representing the position of the color in array
+}
+```
 
 ## Plan:
 RL Models:
