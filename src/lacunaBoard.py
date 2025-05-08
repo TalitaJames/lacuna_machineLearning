@@ -7,9 +7,9 @@ from scipy.spatial import Voronoi, voronoi_plot_2d
 
 
 class LacunaBoard:
-    def __init__(self, flowerList, radius=1.0):
+    def __init__(self, flowerList, flowerCount = 7, radius=1.0, interactive=False):
         # Game Constants
-        self.flowerCount = 7 # there are x of each token, in x types ()
+        self.flowerCount = flowerCount # there are x of each token, in x types ()
         self.radius = radius # Circle that the tokens are all in. For plotting only
         self.precision = 0.1 # Precision for the game (how exact tokens should be, or how close they should be to the flowers to count as "on" the flower)
 
@@ -26,6 +26,7 @@ class LacunaBoard:
         self.isPlayerATurn = True # True if player A's turn (False for player B)
         self.userFlowers = np.zeros((2, self.flowerCount)) # a count of the tokens the user has claimed
         self.userTokenPositions = np.full((2, 6, 2), np.nan)  # Shape: (2 players, 6 tokens each, 2 coordinates)
+        #TODO should there be flowerCount - 1 tokens? (or 6) for each player?
 
 
     # Interact with the game
@@ -249,10 +250,11 @@ def get_color(color):
 
 
 # new Board with random data
-def new_random_lacuna_tokens(radius=1, minDistanceApart = 0.075, seed=None):
+def new_random_lacuna_tokens(flowerCount = 7, radius=1, minDistanceApart = 0.075, seed=None):
     '''Create a new random list of tokens with size tokens of each color
 
     Args:
+    - flowerCount: int, number of colors (types) of tokens
     - radius: float, radius of the circle
     - minDistanceApart: float, minimum distance between tokens
     - seed: int, random seed for reproducibility
@@ -261,12 +263,11 @@ def new_random_lacuna_tokens(radius=1, minDistanceApart = 0.075, seed=None):
     if seed is not None: # set the seed for reproducibility
         random.seed(seed)
 
-    size = 7 # Number of colors/types of tokens
     flowerPositions = []
     flowerNodes = []
 
-    for i in range(size): # how many colors
-        for _ in range(size): # how many of each color
+    for i in range(flowerCount): # how many colors
+        for _ in range(flowerCount): # how many of each color
 
             inCircle = False # is the token in the circle?
             nearOther = True # are there other tokens nearby?
@@ -291,15 +292,16 @@ def new_random_lacuna_tokens(radius=1, minDistanceApart = 0.075, seed=None):
 
 if __name__ == "__main__":
     radius = 1
-    nodes = new_random_lacuna_tokens(radius=radius, seed = 70, minDistanceApart=0.09)
+    flowerCount = 7
+    nodes = new_random_lacuna_tokens(flowerCount=flowerCount, radius=radius, seed = 70, minDistanceApart=0.09)
 
-    board = LacunaBoard(nodes, radius=radius)
+    board = LacunaBoard(nodes, flowerCount=flowerCount, radius=radius)
     board.view_board()
-    board.take_turn( 0.0, -0.5)
-    board.take_turn( 0.5,  0.7)
-    board.take_turn(-0.4,  0.2)
-    board.take_turn(-0.4, -0.3)
+    # board.take_turn( 0.0, -0.5)
+    # board.take_turn( 0.5,  0.7)
+    # board.take_turn(-0.4,  0.2)
+    # board.take_turn(-0.4, -0.3)
     # print(f"{board.userTokenPositions}")
     # print(f"{board.is_game_finished()}")
 
-    board.view_board()
+    # board.view_board()
