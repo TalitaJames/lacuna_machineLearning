@@ -20,14 +20,9 @@ Deactivate with `deactivate`
 List packages installed with `pip freeze -l` (local flag)
 
 ## Formats
-A "flower" is a token (note that the user placments aren't included) stored as a dictionary with the format:
-```py
-{
-    'pos': (x, y), #the position, as an `(x,y)` tupple
-    'color': HTMLColor, # a string, with the colour in a matplotlib format
-    'colorID': intColour # representing the position of the color in array
-}
-```
+A "flower" is a token (note that the user placments aren't included)
+and is stored as a dictionary.
+The format may be seen from the `new_random_lacuna_tokens()` function
 
 ## Plan:
 RL Models:

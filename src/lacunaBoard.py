@@ -281,9 +281,9 @@ def new_random_lacuna_tokens(flowerCount = 7, radius=1, minDistanceApart = 0.075
 
             flowerPositions.append([x,y,i])
             nodeDetails = {
-                'pos': (x, y),
-                'color': get_color(i),
-                'colorID': i,
+                'pos': (x, y), # [float, float] Position of the flower (x, y)
+                'color': get_color(i), # [String] color of the flower (hex code)
+                'colorID': i, # [int] ID of the flower color
             }
             flowerNodes.append((len(flowerPositions) - 1, nodeDetails))
 
