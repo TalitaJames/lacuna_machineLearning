@@ -125,7 +125,7 @@ class CriticNetwork(nn.Module):#Value
     def load_checkpoint(self):
         self.load_state_dict(T.load(self.checkpoint_file))
 
-class Agent:
+class Agent: #FIXME inherit from Player (needs to be imported)
     def __init__(self, n_actions, input_dims):
         
         #change me for fine tunring
