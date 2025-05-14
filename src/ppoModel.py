@@ -28,7 +28,7 @@ class PPOMemory:
         indicies = np.arange(n_states, dtype=np.int64)
         np.random.shuffle(indicies)
         batches = [indicies[i:i+self.batch_size] for i in batch_start]
-        
+
         return np.array(self.states),\
             np.array(self.actions),\
             np.array(self.probs),\
@@ -63,7 +63,7 @@ class ActorNetwork(nn.Module):#Policy
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'actor_torch_ppo')
         self.actor = nn.Sequential(
-                nn.Linear(*input_dims, fc1_dims), 
+                nn.Linear(*input_dims, fc1_dims),
                 nn.ReLU(),
                 nn.Linear(fc1_dims, fc2_dims),
                 nn.ReLU(),
@@ -127,13 +127,13 @@ class CriticNetwork(nn.Module):#Value
 
 class Agent: #FIXME inherit from Player (needs to be imported)
     def __init__(self, n_actions, input_dims):
-        
+
         #change me for fine tunring
         self.gamma = 0.99 #
         self.policy_clip = 0.2 #policy rate of change max
         self.n_epochs = 100
         self.gae_lambda = 0.95
-        self.critic_coeff = 0.5 
+        self.critic_coeff = 0.5
         self.batch_size=64
         self.alpha = 0.003 #leanring rate
 
@@ -147,7 +147,7 @@ class Agent: #FIXME inherit from Player (needs to be imported)
         self.critic = CriticNetwork(input_dims, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
         self.memory = PPOMemory(self.batch_size)
 
-    #----MEMORY FUNCTIONS----   
+    #----MEMORY FUNCTIONS----
     def remember(self, state, action, probs, vals, reward, done):
         self.memory.store_memory(state, action, probs, vals, reward, done)
 
@@ -226,7 +226,7 @@ class Agent: #FIXME inherit from Player (needs to be imported)
                 self.critic.optimizer.step()
 
         #clear once leanring is done
-        self.memory.clear_memory() 
+        self.memory.clear_memory()
 
     def plot_learning_curve(x, scores, figure_file):
         running_avg = np.zeros(len(scores))
@@ -247,8 +247,8 @@ if __name__ == '__main__':
     # alpha = 0.0003
 
 
-    # ppoAgent = Agent(n_actions=env.action_space.n, batch_size=batch_size, 
-    #                     alpha=alpha, n_epochs=n_epochs, 
+    # ppoAgent = Agent(n_actions=env.action_space.n, batch_size=batch_size,
+    #                     alpha=alpha, n_epochs=n_epochs,
     #                     input_dims=env.observation_space.shape)
 
     # n_games = 300
@@ -282,6 +282,6 @@ if __name__ == '__main__':
     #         agent.save_models()
 
     #     print('episode', i, 'score %.1f' % score, 'avg score %.1f' % avg_score,'time_steps', n_steps, 'learning_steps', learn_iters)
-    
+
     # x = [i+1 for i in range(len(score_history))]
     # plot_learning_curve(x, score_history, figure_file)
