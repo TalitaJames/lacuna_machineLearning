@@ -28,18 +28,19 @@ class LacunaBoard:
         self.userTokenPositions = np.full((2, 6, 2), np.nan)  # Shape: (2 players, 6 tokens each, 2 coordinates)
         #TODO should there be flowerCount - 1 tokens? (or 6) for each player?
 
-
     # Interact with the game
     def _place_user_token(self, player, x, y):
         '''Add one of the users pieces,
         remove the two colinear flower and give them to the user.
-        Place a token for the specified player at (x, y).'''
+        Place a token for the specified player at (x, y)
 
-        #TODO remove colinear flowers from the graph, and give them to the user (in )
-        # Find the first available slot for the player
+        returns boolean (was the token was collected?)
+        '''
+
+        # Find the first available slot for the player's token
         for i in range(self.userTokenPositions.shape[1]): # for each token
             if np.isnan(self.userTokenPositions[player, i, 0]):  # Check if the slot is empty
-                self.userTokenPositions[player, i] = [x, y]
+                self.userTokenPositions[player, i] = [x, y] # place the token there
 
                 # check if the token intersects with a colinear flower pair
                 for edge in self.flowerGraph.edges():
@@ -47,9 +48,8 @@ class LacunaBoard:
                     pos1 = self.flowerGraph.nodes[f1_id]['pos']
                     pos2 = self.flowerGraph.nodes[f2_id]['pos']
 
+                    # If the token intersects, remove the flower from the graph
                     if self._does_token_intersect(pos1, pos2, (x, y)):
-                        # If the token intersects, remove the flower from the graph
-
                         # Add the flower to the user's collection
                         colorID = self.flowerGraph.nodes[f1_id]['colorID']
                         self.userFlowers[player][colorID] += 2
@@ -61,20 +61,59 @@ class LacunaBoard:
                         # print(f"removed nodes {f1_id} and {f2_id}")
 
                         self.find_potential_moves() # update graph with unblocked edges
-                        return
+                        return True
 
-                return
+                return False
 
+    def get_observation(self): #TODO
+        ''' Returns the state observations '''
+        observation = 0
+        return observation
 
     def take_turn(self, x, y):
         '''Take a turn for the current player
-        Place a token for the current player at (x, y)'''
+        Place a token for the current player at (x, y)
+        returns:
+        - observations: information about game state
+        - reward: for collecting flowers, proximity to flowers
+        - done: boolean
+        - info: dict for debuging
+        '''
 
+
+        # do the action
         player = 0 if self.isPlayerATurn else 1
         # print(f"Player {player} is taking a turn at ({x}, {y})")
-        self._place_user_token(player, x, y) # take the turn
+        colectedFlowers = self._place_user_token(player, x, y) # take the turn
         self.isPlayerATurn = not self.isPlayerATurn # Switch turns
 
+
+        ''' Calculate reward
+          + a reward for gaining flowers
+          + a smaller reward based on some function f(d), where d is euclidian distance to each flower (reward being close to many flowers)
+          + big reward if game is over and the player is the winner
+        '''
+        # Reward for gaining flowers (number of flowers collected this turn)
+        flowerGainedReward = 7 * (1 if colectedFlowers else 0)
+
+        # Reward for proximity to flowers
+        flowerProximityReward = 0
+        distToFlowerRewardFn = lambda d: math.exp(-8*d) # Reward function for distance to flower
+
+        for flower in self.flowerGraph.nodes(data=True): # distance user to each flower
+            flowerPos = flower[1]['pos']
+            distance = np.linalg.norm(np.array([x,y]) - np.array(flowerPos))
+            flowerProximityReward += distToFlowerRewardFn(distance)
+
+        gameOverReward = 50 if self.is_game_finished() and self.current_winner() == player else 0
+
+        reward = flowerGainedReward + flowerProximityReward + gameOverReward
+        # print(f"reward is {flowerGainedReward} + {flowerProximityReward:0.4f} + {gameOverReward} = {reward}")
+
+
+        done =  self.is_game_finished() # game is done when it is finished
+        info = {} # debuging info
+        return self.get_observation(), reward, done, info
 
     def _does_token_intersect(self, start, end, check):
         '''Check if the line between start and end intersects with check position
@@ -142,6 +181,7 @@ class LacunaBoard:
     def current_winner(self):
         '''Calculate the winner of the game at its current state
         The winner is the person who collects more flowers in more colors
+        0 = player A, 1 = player B
         '''
 
         pA = self.userFlowers[0] # Player 1's tokens
@@ -152,14 +192,13 @@ class LacunaBoard:
         # pA wins if there are more True values than False (sum > half)
         pAIsWinner = sum(winnerPerColor) > len(winnerPerColor) / 2
 
-        return 0 if pAIsWinner else 1 # 0 = player A, 1 = player B
-
+        return 0 if pAIsWinner else 1
 
     def is_game_finished(self):
         '''Check if the game is finished.
-        The game is finished when both players have played their six tokens'''
+        The game is finished when both players have placed all their tokens'''
 
-        return ~np.isnan(self.userTokenPositions[:, :, :]).any()
+        return bool(~np.isnan(self.userTokenPositions[:, :, :]).any())
 
     def _allocate_remaining_flowers(self):
         '''When the tokens are all placed,
