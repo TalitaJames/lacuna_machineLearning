@@ -1,50 +1,54 @@
+import time
 from lacunaBoard import *
 from player import Player, HumanPlayer
 
 
-def play_game(gameEnv, playerA, playerB):
-    '''
-    reset enviroment
-    get state from gameEnv
-    give state to player A & B
+def play_game(gameEnv, playerA, playerB, viewGame=False):
+    '''Play a game of Lacuna with the given players and environment.'''
+    observation = gameEnv.get_observation()
+    playerA.receive_observation(observation, 0, False, {})
+    playerB.receive_observation(observation, 0, False, {})
 
-    # presumably player A & B want the observation
-    # information before they take a first turn
+    if viewGame:
+        gameEnv.view_board().show()
 
-    while game isn't done:
-        (x,y) = playerA.take_turn()
-        response = gameEnv.take_turn(x,y)
-        playerA.turn_results(response)
+    players = [playerA, playerB]
+    while not gameEnv.is_game_finished():
+        for player in players:
+            print(f"\nPlayer {player.getName()}'s turn")
+            x, y = player.take_turn()
+            print(f"\t Entered ({x}, {y})")
+            gameState = gameEnv.take_turn(x, y)
+            player.receive_observation(*gameState)
 
-        and for playerB
-    '''
-    pass
+            if viewGame:
+                gameEnv.view_board().show()
 
 
-def train_models(episodesCount, playerA, playerB):
-    '''
-    args:
+def train_models(episodesCount, playerA, playerB, viewGame=False):
+    ''' args:
         - episodesCount: number of games to play
+        - player(A, B): two players to play against each other
+        - viewGame: if True, will show the game board after each turn
     '''
+    gameArgs = {"flowerCount": 7, "radius": 1}
 
-    '''
+    print(f"Training {playerA.getName()} vs {playerB.getName()} for {episodesCount} episodes with {gameArgs} and {viewGame=}")
     for _ in range(episodesCount):
-        gameEnv = new game enviroment
-        play_game(gameEnv, playerA, playerB)
-
+        tokens = new_random_lacuna_tokens(**gameArgs)
+        gameEnv = LacunaBoard(tokens, **gameArgs)
+        play_game(gameEnv, playerA, playerB, viewGame)
 
     # all training is done
-    playerA.save(filepath)
-    playerB.save(filepath)
-    '''
-    pass
+    timestamp = time.strftime("%Y%m%d-%H%M%S",time.localtime())
+    playerA.save(f"out/{timestamp}_{playerA.getName()}_A")
+    playerB.save(f"out/{timestamp}_{playerA.getName()}_B")
 
 
 if __name__ == "__main__":
     # Example usage of the LacunaBoard class
-    radius = 1
-    tokens = new_random_lacuna_tokens(flowerCount=7, radius=radius)
 
-    board = LacunaBoard(tokens)
-    board.view_board().show()
-    board.view_board_with_voranoi().show()
+    humanFoo = HumanPlayer()
+    humanBaz = HumanPlayer()
+
+    train_models(1, humanFoo, humanBaz, viewGame=True)
