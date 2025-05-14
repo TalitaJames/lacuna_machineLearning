@@ -233,13 +233,6 @@ class LacunaBoard:
 
     # Display, visualisation methods
     def view_board(self):
-        # Draw voranoi diagram and user moves
-
-        # if self.userTokenPositions is not None or len(self.userTokenPositions) > 0:
-        #     pointsXY = np.array([[x, y] for x,y,i in self.userTokenPositions])
-        #     v = Voronoi(pointsXY)
-        #     voronoi_plot_2d(v)
-
         pos = nx.get_node_attributes(self.flowerGraph, 'pos')
         colors = [data.get('color', 'black') for _, data in self.flowerGraph.nodes(data=True)]
         nx.draw(self.flowerGraph, with_labels=True, pos=pos, node_color=colors)
@@ -261,7 +254,25 @@ class LacunaBoard:
         ax.set_xlim([-(self.radius+0.05), (self.radius+0.05)])
         ax.set_ylim([-(self.radius+0.05), (self.radius+0.05)])
 
-        plt.show()
+        return plt
+
+    def view_board_with_voranoi(self):
+        # Draw voranoi diagram and user moves
+
+        # all tokens placed by all players in a single array
+        tokenCount = self.userTokenPositions.shape[0] * self.userTokenPositions.shape[1] # users * tokens each
+        flatUserTokens = self.userTokenPositions.reshape((tokenCount,2))
+        flatUserTokens =  flatUserTokens[~np.isnan(flatUserTokens[:, 0])]
+
+        print(f"{flatUserTokens}")
+        v = Voronoi(flatUserTokens)
+        print(f"{v}")
+        voronoi_plot_2d(v)
+
+        # add the rest on top
+        self.view_board()
+
+        return plt
 
 
 #given an int, return a string color
