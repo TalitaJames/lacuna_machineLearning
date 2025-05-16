@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 ''' An abstract base class to ensure all agents have required playing models '''
 class Player(ABC):
     @abstractmethod
-    def take_turn(self):
+    def select_action(self):
         '''decide and return an (x,y) action'''
         pass
 
@@ -29,7 +29,7 @@ class HumanPlayer(Player):
     def __init__(self):
         pass
 
-    def take_turn(self):
+    def select_action(self):
         badData = True
         while badData:
             try:

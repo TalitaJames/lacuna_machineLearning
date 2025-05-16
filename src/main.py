@@ -16,7 +16,7 @@ def play_game(gameEnv, playerA, playerB, viewGame=False):
     while not gameEnv.is_game_finished():
         for player in players:
             print(f"\nPlayer {player.getName()}'s turn")
-            x, y = player.take_turn()
+            x, y = player.select_action()
             print(f"\t Entered ({x}, {y})")
             gameState = gameEnv.take_turn(x, y)
             player.receive_observation(*gameState)
