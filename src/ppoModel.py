@@ -59,9 +59,9 @@ class PPOMemory:
 
 #policy network - maps states to action probabilities
 #This is used in choose_action and during training for policy update
-class ActorNetwork(nn.Module):#Policy
+class PPOActorNetwork(nn.Module):#Policy
     def __init__(self, n_actions, input_dims, alpha, fc1_dims, fc2_dims, chkpt_dir):
-        super(ActorNetwork, self).__init__()
+        super(PPOActorNetwork, self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'actor_torch_ppo')
         self.actor = nn.Sequential(
@@ -99,9 +99,9 @@ class ActorNetwork(nn.Module):#Policy
         self.load_state_dict(T.load(self.checkpoint_file))
 
 #Value network - estimates how good a given state is
-class CriticNetwork(nn.Module):#Value
+class PPOCriticNetwork(nn.Module):#Value
     def __init__(self, input_dims, alpha, fc1_dims, fc2_dims, chkpt_dir):
-        super(CriticNetwork, self).__init__()
+        super(PPOCriticNetwork, self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'critic_torch_ppo')
         #Feedfoward neural netowrk for estimating the state-value function V(s)
@@ -145,8 +145,8 @@ class PPOAgent(Player):
         self.chkpt_dir='tmp/ppo'
 
         #create networks and memory
-        self.actor = ActorNetwork(n_actions, input_dims, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
-        self.critic = CriticNetwork(input_dims, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
+        self.actor = PPOActorNetwork(n_actions, input_dims, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
+        self.critic = PPOCriticNetwork(input_dims, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
         self.memory = PPOMemory(self.batch_size)
 
     #----MEMORY FUNCTIONS----
