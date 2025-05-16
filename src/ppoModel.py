@@ -10,6 +10,8 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 from torch.distributions.categorical import Categorical
 
+from player import Player
+
 
 class PPOMemory:
     def __init__(self, batch_size):
@@ -125,7 +127,7 @@ class CriticNetwork(nn.Module):#Value
     def load_checkpoint(self):
         self.load_state_dict(T.load(self.checkpoint_file))
 
-class Agent: #FIXME inherit from Player (needs to be imported)
+class PPOAgent(Player):
     def __init__(self, n_actions, input_dims):
 
         #change me for fine tunring
@@ -247,7 +249,7 @@ if __name__ == '__main__':
     # alpha = 0.0003
 
 
-    # ppoAgent = Agent(n_actions=env.action_space.n, batch_size=batch_size,
+    # ppoAgent = PPOAgent(n_actions=env.action_space.n, batch_size=batch_size,
     #                     alpha=alpha, n_epochs=n_epochs,
     #                     input_dims=env.observation_space.shape)
 
