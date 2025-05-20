@@ -15,11 +15,10 @@ class LacunaBoard:
 
         # Flower tokens (the game pieces)
         self.flowerPositions_initial = flowerList # Where all the game pices were at the start
-        self.flowerPositions_active = flowerList # Where all the game pieces are now
 
         # Flower graph
         self.flowerGraph = nx.Graph() # Graph of the flower positions
-        self.flowerGraph.add_nodes_from(self.flowerPositions_active) # Add the flower positions to the graph
+        self.flowerGraph.add_nodes_from(self.flowerPositions_initial) # Add the flower positions to the graph
         self.find_potential_moves() # Find the potential moves for the game
 
         # User data
@@ -67,7 +66,28 @@ class LacunaBoard:
 
     def get_observation(self): #TODO
         ''' Returns the state observations '''
-        observation = 0
+
+        # Flowers on the board (flattened)
+        flower_positions = []
+        for node_id, data in self.flowerPositions_initial:
+            flowerPos = [np.nan, np.nan, np.nan]
+            if node_id in self.flowerGraph.nodes():
+                flowerPos=[*data['pos'], data['colorID']]
+            flower_positions.extend(flowerPos)
+
+        # Player token positions (flattened, NaNs replaced with zeros or a mask)
+        player_tokens = self.userTokenPositions.flatten()
+        # player_tokens = np.nan_to_num(self.userTokenPositions, nan=0.0).flatten()
+
+        # Flowers collected by each player
+        collected = self.userFlowers.flatten()
+
+        # Whose turn (0 or 1)
+        turn = [1.0 if self.isPlayerATurn else 0.0]
+
+        # Concatenate all parts into a single observation vector
+        print(f"{len(flower_positions)=}, {len(player_tokens)=}, {len(collected)=}")
+        observation = np.concatenate([flower_positions, player_tokens, collected])
         return observation
 
     def take_turn(self, x, y):
