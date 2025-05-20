@@ -10,7 +10,8 @@ def play_game(gameEnv, playerA, playerB, viewGame=False):
     playerB.receive_observation(observation, 0, False, {})
 
     if viewGame:
-        gameEnv.view_board().show()
+        fig, ax = gameEnv.view_board()
+        plt.show()
 
     players = [playerA, playerB]
     while not gameEnv.is_game_finished():
@@ -22,7 +23,8 @@ def play_game(gameEnv, playerA, playerB, viewGame=False):
             player.receive_observation(*gameState)
 
             if viewGame:
-                gameEnv.view_board().show()
+                fig, ax = gameEnv.view_board()
+                plt.show()
 
 
 def train_models(episodesCount, playerA, playerB, viewGame=False):

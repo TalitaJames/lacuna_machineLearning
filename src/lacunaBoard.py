@@ -233,28 +233,31 @@ class LacunaBoard:
 
     # Display, visualisation methods
     def view_board(self):
+        fig, ax = plt.subplots()
+
+        # plot the flowers
         pos = nx.get_node_attributes(self.flowerGraph, 'pos')
         colors = [data.get('color', 'black') for _, data in self.flowerGraph.nodes(data=True)]
-        nx.draw(self.flowerGraph, with_labels=True, pos=pos, node_color=colors)
+        nx.draw(self.flowerGraph, with_labels=True, pos=pos, node_color=colors, ax=ax)
 
+        # Draw the circle representing the board
         boardCircle = plt.Circle((0, 0), self.radius, color='k', fill=False, linewidth=1, linestyle='-' )
-        plt.gca().add_patch(boardCircle)
+        ax.add_patch(boardCircle)
 
         # Add the user tokens to the plot
         for player in range(2):
             placed_tokens = self.userTokenPositions[player][~np.isnan(self.userTokenPositions[player, :, 0])]
             # print(f"Player {player}'s tokens:\n{placed_tokens}")
             playerColor = ['red', 'blue'] # Color of player token
-            plt.scatter(placed_tokens[:, 0], placed_tokens[:, 1], color=playerColor[player], marker='*', label=f"Player {player}")
+            ax.scatter(placed_tokens[:, 0], placed_tokens[:, 1], color=playerColor[player], marker='*', label=f"Player {player}")
 
-        plt.title("Lacuna Board")
-        plt.gca().set_aspect('equal')
+        ax.set_title("Lacuna Board")
+        ax.set_aspect('equal')
 
-        ax = plt.gca()
         ax.set_xlim([-(self.radius+0.05), (self.radius+0.05)])
         ax.set_ylim([-(self.radius+0.05), (self.radius+0.05)])
 
-        return plt
+        return fig, ax
 
     def view_board_with_voranoi(self):
         # Draw voranoi diagram and user moves

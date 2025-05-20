@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import matplotlib.pyplot as plt
 
 
 ''' An abstract base class to ensure all agents have required playing models '''
@@ -26,10 +27,11 @@ class Player(ABC):
 
 ''' Human player interacts with the CLI'''
 class HumanPlayer(Player):
-    def __init__(self):
-        pass
+    def __init__(self, gameEnv=None):
+        self.gameEnv = gameEnv
 
-    def select_action(self):
+    def select_action_cli(self):
+        '''input from the command line'''
         badData = True
         while badData:
             try:
@@ -40,6 +42,32 @@ class HumanPlayer(Player):
             except ValueError:
                 print("Bad input! please enter a float x & y")
 
+        return x, y
+
+    def select_action_gui(self):
+        if self.gameEnv is None:
+            raise ValueError("Game environment is not set for HumanPlayer")
+
+        coords = []
+
+        def onclick(event):
+            if event.inaxes:
+                coords[:] = [event.xdata, event.ydata]
+                plt.close()
+
+        fig, ax = self.gameEnv.view_board()  # or however you plot the board
+        cid = fig.canvas.mpl_connect('button_press_event', onclick)
+        plt.show()
+
+        x, y = coords
+        return x, y
+
+    def select_action(self):
+        ''' get input'''
+        if self.gameEnv is not None:
+            x, y = self.select_action_gui()
+        else:
+            x, y = self.select_action_cli()
         return x, y
 
     def receive_observation(self, observation, reward, done, info):
