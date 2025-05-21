@@ -5,6 +5,7 @@ Where noted, inspired or adapted from other work
 import numpy as np
 import torch.nn as nn
 import time
+import json
 
 
 def backup_models(models, path):
@@ -12,6 +13,14 @@ def backup_models(models, path):
     timestamp = time.strftime("%Y%m%d-%H%M%S",time.localtime())
     for number, model in enumerate(models):
         model.save(f"out/{timestamp}_{model}_{number}")
+
+
+def load_config(filename):
+    '''returns a dict from a json file, made by talita'''
+    with open(filename, 'r', encoding='UTF-8') as f:
+        config_file = json.load(f)
+
+    return config_file
 
 
 def to_np(t):

@@ -243,29 +243,8 @@ class SACAgent(Player):
 
 if __name__ == "__main__":
 
-    sacParams = {
-        "obs_dim": 187,                 # Dimension of observation/state space
-        "action_dim": 2,                # Dimension of action space
-        "action_range": (-1,1),         # Tuple (min, max) for action values (for all action)
-        "device": 'cpu',                # what architecture to run, 'cpu' or 'cuda'
-        "discount": 0.99,               # Discount factor for future rewards
-        "init_temperature": 0.1,        # Initial entropy temperature (alpha)
-        "alpha_lr": 3e-4,               # Learning rate for alpha (entropy)
-        "alpha_betas": (0.9, 0.999),    # Adam betas for alpha optimizer
-
-        "actor_lr": 3e-4,               # Learning rate for actor
-        "actor_betas": (0.9, 0.999),    # Adam betas for actor optimizer
-        "actor_update_frequency": 1,    # How often to update actor (in steps)
-
-        "critic_lr": 3e-4,              # Learning rate for critic
-        "critic_betas": (0.9, 0.999),   # Adam betas for critic optimizer
-        "critic_tau": 0.005,            # Target smoothing coefficient (Polyak)
-        "critic_target_update_frequency": 2,  # How often to update target critic
-
-        "batch_size": 256,              # Batch size for updates
-        "replay_buffer_capacity": 5000, # Capacity of the replay buffer
-        "learnable_temperature": True   # Whether alpha is learnable
-    }
+    sacParams = utils.load_config('config/sac.json')
+    print(sacParams)
 
     sac_agent = SACAgent(**sacParams)
     print(f"SAC agent created with name: {sac_agent}")
