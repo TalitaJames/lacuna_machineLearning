@@ -1,7 +1,7 @@
 import time
 from lacunaBoard import *
 from player import Player, HumanPlayer
-
+from ppoModel import PPOAgent
 
 def play_game(gameEnv, playerA, playerB, viewGame=False):
     '''Play a game of Lacuna with the given players and environment.'''
@@ -53,4 +53,7 @@ if __name__ == "__main__":
     humanFoo = HumanPlayer()
     humanBaz = HumanPlayer()
 
-    train_models(1, humanFoo, humanBaz, viewGame=True)
+    ppoFoo = PPOAgent()
+    ppoBaz = PPOAgent()
+
+    train_models(10, ppoFoo, ppoBaz, viewGame=True)

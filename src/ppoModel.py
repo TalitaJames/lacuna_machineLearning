@@ -70,7 +70,6 @@ class PPOActorNetwork(nn.Module):#Policy
                 nn.Linear(fc1_dims, fc2_dims),
                 nn.ReLU(),
                 nn.Linear(fc2_dims, n_actions)#,
-                #nn.Softmax(dim=-1)<---DISCRETE
         )
 
         self.log_std = nn.Parameter(T.zeros(1, n_actions))
@@ -80,11 +79,6 @@ class PPOActorNetwork(nn.Module):#Policy
         self.to(self.device)
 
     def forward(self, state):
-        #DISCRETE (SOFTMAX)
-        # dist = self.actor(state)
-        # dist = Categorical(dist)#The output is a catergorical distribution which allows sampling actions and computing log-probabilites
-        # return dist
-
         #CONTINUOUS (GAUSIAN.)
         mean = self.actor(state) #get mean from the actor
         log_std = self.log_std.expand_as(mean) #Log standard deviation (use learnable parameters)
@@ -128,7 +122,7 @@ class PPOCriticNetwork(nn.Module):#Value
         self.load_state_dict(T.load(self.checkpoint_file))
 
 class PPOAgent(Player):
-    def __init__(self, n_actions, input_dims):
+    def __init__(self, n_actions = 2, input_dims = (2,)):
 
         #change me for fine tunring
         self.gamma = 0.99 #
@@ -144,6 +138,8 @@ class PPOAgent(Player):
 
         self.chkpt_dir='tmp/ppo'
 
+        self.observation = input_dims
+
         #create networks and memory
         self.actor = PPOActorNetwork(n_actions, input_dims, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
         self.critic = PPOCriticNetwork(input_dims, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
@@ -154,20 +150,20 @@ class PPOAgent(Player):
         self.memory.store_memory(state, action, probs, vals, reward, done)
 
     def save_models(self):
-        print('----saving models----')
+        print('----saving networks----')
         self.actor.save_checkpoint()
         self.critic.save_checkpoint()
 
     def load_models(self):
-        print('----loading models----')
+        print('----loading networks----')
         self.actor.load_checkpoint()
         self.critic.load_checkpoint()
 
-    #----TRAINING FUNCTIONS----
-    def choose_action(self, observation):
-        state = T.tensor([observation], dtype=T.float).to(self.actor.device) #replace this with the states of the lacuna board
+    def select_action (self):
+        state = T.tensor([self.observation], dtype=T.float).to(self.actor.device) #replace this with the states of the lacuna board
 
-        dist = self.actor(state)
+        mean, std = self.actor(state)
+        dist = T.distributions.Normal(mean, std)
         value = self.critic(state)
         action = dist.sample()
 
@@ -177,14 +173,35 @@ class PPOAgent(Player):
 
         return action, probs, value
 
+
+    def receive_observation(self, observation, reward, done, info):
+        self.observation = observation
+        store_memory()
+        print(f"You got a reward of {reward:0.2f}, is the game done? {done}")
+        if len(self.states) >= batch_size:
+            self.learn()
+
+
+    def plot_learning_curve(x, scores, figure_file):
+        running_avg = np.zeros(len(scores))
+        for i in range(len(running_avg)):
+            running_avg[i] = np.mean(scores[max(0, i-100):(i+1)])
+        plt.plot(x, running_avg)
+        plt.title('Running average of previous 100 scores')
+        plt.savefig(figure_file)  
+
+    def save(self, filepath):
+        print(f"SAVE ME!!!!!!!!! (Later)")
+
     #main leanring fubnction, call this to train model
     def learn(self):
+        #get training data from memory
         for _ in range(self.n_epochs):
-            state_arr, action_arr, old_prob_arr, vals_arr,\
-            reward_arr, dones_arr, batches = \
-                    self.memory.generate_batches()
+            state_arr, action_arr, old_prob_arr, vals_arr,reward_arr, dones_arr, batches = self.memory.generate_batches()
 
             values = vals_arr
+
+            #Calculte Advantage using GAE(Gneneralised Advantage Estimation)
             advantage = np.zeros(len(reward_arr), dtype=np.float32)
 
             for t in range(len(reward_arr)-1):
@@ -194,32 +211,40 @@ class PPOAgent(Player):
                     a_t += discount*(reward_arr[k] + self.gamma*values[k+1]*\
                             (1-int(dones_arr[k])) - values[k])
                     discount *= self.gamma*self.gae_lambda
-                advantage[t] = a_t
+                advantage[t] = a_t #advantage[t] = how much better the taken action was than expected
+            
+            #Convert to PyTorch tensor
             advantage = T.tensor(advantage).to(self.actor.device)
-
             values = T.tensor(values).to(self.actor.device)
+
+            #loop over minibatches
             for batch in batches:
+                #sample batch
                 states = T.tensor(state_arr[batch], dtype=T.float).to(self.actor.device)
                 old_probs = T.tensor(old_prob_arr[batch]).to(self.actor.device)
                 actions = T.tensor(action_arr[batch]).to(self.actor.device)
 
-                dist = self.actor(states)
+                #get new policy and value estimations using networks
+                dist = self.actor(states) #get new action distribution
                 critic_value = self.critic(states)
+                critic_value = T.squeeze(critic_value) #flatten critic output
 
-                critic_value = T.squeeze(critic_value)
-
+                #PPO Ratio and Clipping
                 new_probs = dist.log_prob(actions)
-                prob_ratio = new_probs.exp() / old_probs.exp()
-                #prob_ratio = (new_probs - old_probs).exp()
+                prob_ratio = new_probs.exp() / old_probs.exp() # this is the policy ratio equation
+
+                #Clipped Surrogate loss to prevent big jumps in policy update
                 weighted_probs = advantage[batch] * prob_ratio
                 weighted_clipped_probs = T.clamp(prob_ratio, 1-self.policy_clip,
                         1+self.policy_clip)*advantage[batch]
-                actor_loss = -T.min(weighted_probs, weighted_clipped_probs).mean()
+                actor_loss = -T.min(weighted_probs, weighted_clipped_probs).mean() #clipped surrogate loss equation
 
+                #critic loss (MSE between returns and value estimates)
                 returns = advantage[batch] + values[batch]
                 critic_loss = (returns-critic_value)**2
                 critic_loss = critic_loss.mean()
 
+                #Backproperate combined loss
                 total_loss = actor_loss + self.critic_coeff*critic_loss
                 self.actor.optimizer.zero_grad()
                 self.critic.optimizer.zero_grad()
@@ -227,63 +252,6 @@ class PPOAgent(Player):
                 self.actor.optimizer.step()
                 self.critic.optimizer.step()
 
-        #clear once leanring is done
+        #clear memort after update
         self.memory.clear_memory()
 
-    def plot_learning_curve(x, scores, figure_file):
-        running_avg = np.zeros(len(scores))
-        for i in range(len(running_avg)):
-            running_avg[i] = np.mean(scores[max(0, i-100):(i+1)])
-        plt.plot(x, running_avg)
-        plt.title('Running average of previous 100 scores')
-        plt.savefig(figure_file)
-
-if __name__ == '__main__':
-    print("HELLO WORLD :D")
-
-    #place holder for lacunaboard env
-    # env = gym.make('CartPole-v0')
-    # N = 20
-    # batch_size = 5
-    # n_epochs = 4
-    # alpha = 0.0003
-
-
-    # ppoAgent = PPOAgent(n_actions=env.action_space.n, batch_size=batch_size,
-    #                     alpha=alpha, n_epochs=n_epochs,
-    #                     input_dims=env.observation_space.shape)
-
-    # n_games = 300
-
-    # best_score = env.reward_range[0]
-    # score_history = []
-
-    # learn_iters = 0
-    # avg_score = 0
-    # n_steps = 0
-
-    # for i in range(n_games):
-    #     observation = env.reset()
-    #     done = False
-    #     score = 0
-    #     while not done:
-    #         action, prob, val = agent.choose_action(observation)
-    #         observation_, reward, done, info = env.step(action)
-    #         n_steps += 1
-    #         score += reward
-    #         agent.remember(observation, action, prob, val, reward, done)
-    #         if n_steps % N == 0:
-    #             agent.learn()
-    #             learn_iters += 1
-    #         observation = observation_
-    #     score_history.append(score)
-    #     avg_score = np.mean(score_history[-100:])
-
-    #     if avg_score > best_score:
-    #         best_score = avg_score
-    #         agent.save_models()
-
-    #     print('episode', i, 'score %.1f' % score, 'avg score %.1f' % avg_score,'time_steps', n_steps, 'learning_steps', learn_iters)
-
-    # x = [i+1 for i in range(len(score_history))]
-    # plot_learning_curve(x, score_history, figure_file)
