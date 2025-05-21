@@ -108,7 +108,7 @@ class SACAgent(Player):
 
     def receive_observation(self, observation, reward, done, info):
         # Store the latest transition (if not the first step)
-        if self.last_observation is not None:
+        if self.last_observation is not None and self.last_action is not None:
             self.replay_buffer.add(
                 self.last_observation, self.last_action, self.last_reward,
                 observation, done)
@@ -151,10 +151,25 @@ class SACAgent(Player):
         action = action.clamp(*self.action_range)
         return utils.to_np(action[0])
 
-    def save(self, filepath): #TODO
-        print("TODO")
-        pass
-    # ... (rest of the update_critic, update_actor_and_alpha, update methods as before)
+    def save(self, filepath):
+        '''Save the actor, critic, and critic_target networks to a file.'''
+        torch.save({
+            'actor_state_dict': self.actor.state_dict(),
+            'critic_state_dict': self.critic.state_dict(),
+            'critic_target_state_dict': self.critic_target.state_dict(),
+            'log_alpha': self.log_alpha.detach().cpu().numpy(),
+        }, filepath)
+        print(f"Saved SAC agent networks to {filepath}")
+
+    def load(self, filepath):
+        '''Load the actor, critic, and critic_target networks from a file.'''
+        checkpoint = torch.load(filepath, map_location=self.device)
+        self.actor.load_state_dict(checkpoint['actor_state_dict'])
+        self.critic.load_state_dict(checkpoint['critic_state_dict'])
+        self.critic_target.load_state_dict(checkpoint['critic_target_state_dict'])
+        self.log_alpha = torch.tensor(checkpoint['log_alpha']).to(self.device)
+
+        print(f"Loaded SAC agent networks from {filepath}")
 
 
     def update_critic(self, obs, action, reward, next_obs, not_done, step):# logger, step):

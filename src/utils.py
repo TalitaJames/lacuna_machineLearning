@@ -4,6 +4,14 @@ Where noted, inspired or adapted from other work
 '''
 import numpy as np
 import torch.nn as nn
+import time
+
+
+def backup_models(models, path):
+    '''Backup models to path, made by talita'''
+    timestamp = time.strftime("%Y%m%d-%H%M%S",time.localtime())
+    for number, model in enumerate(models):
+        model.save(f"out/{timestamp}_{model}_{number}")
 
 
 def to_np(t):
