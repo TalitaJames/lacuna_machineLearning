@@ -52,12 +52,6 @@ class DoubleQCritic(nn.Module):
                 logger.log_param(f'train_critic/q1_fc{i}', m1, step)
                 logger.log_param(f'train_critic/q2_fc{i}', m2, step)
 
-    def save_checkpoint(self):
-        torch.save(self.state_dict(), self.checkpoint_file)
-
-    def load_checkpoint(self):
-        self.load_state_dict(torch.load(self.checkpoint_file))
-
 
 
 if __name__ == "__main__":
