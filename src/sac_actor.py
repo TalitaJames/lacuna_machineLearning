@@ -78,8 +78,10 @@ class DiagGaussianActor(nn.Module):
         self.log_std_bounds = log_std_bounds
         self.trunk = utils.mlp(obs_dim, hidden_dim, 2 * action_dim,
                                hidden_depth)
+        # two times action_dim to represent mean and log_std
 
         self.apply(utils.weight_init) #TODO what does this do?
+        self.outputs = dict()
 
     def forward(self, obs):
         mu, log_std = self.trunk(obs).chunk(2, dim=-1)
@@ -91,7 +93,7 @@ class DiagGaussianActor(nn.Module):
                                                                      1)
 
         std = log_std.exp()
-
+        # return None
         self.outputs['mu'] = mu
         self.outputs['std'] = std
 
@@ -99,3 +101,27 @@ class DiagGaussianActor(nn.Module):
         return dist
 
 
+if __name__ == "__main__":
+    print("---- This module is not meant to be run directly. ----")
+
+
+    # Testing data
+    obs_dim = 4
+    action_dim = 2
+    hidden_dim = 256
+    hidden_depth = 2
+    log_std_bounds = (-20, 2) #TODO what does this do?
+
+    actor = DiagGaussianActor(obs_dim, action_dim, hidden_dim, hidden_depth, log_std_bounds)
+    print(actor)
+
+    # dummy observation and actions
+    batch_size = 1
+    obs = torch.randn(batch_size, obs_dim)
+
+    distribution = actor(obs)
+    print(f"dist: mean {distribution.mean.shape} {distribution.mean}")
+    print(f"{actor.outputs['std'].shape=} {actor.outputs['std']}")
+
+    actions = distribution.rsample()
+    print(f"\nactions: {actions.shape=} {actions}")
