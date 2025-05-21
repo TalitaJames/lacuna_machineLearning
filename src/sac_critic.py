@@ -58,3 +58,25 @@ class DoubleQCritic(nn.Module):
     def load_checkpoint(self):
         self.load_state_dict(torch.load(self.checkpoint_file))
 
+
+
+if __name__ == "__main__":
+    print("---- This module is not meant to be run directly. ----")
+
+    # Testing data
+    obs_dim = 4
+    action_dim = 2
+    hidden_dim = 256
+    hidden_depth = 2
+
+    critic = DoubleQCritic(obs_dim, action_dim, hidden_dim, hidden_depth)
+    print(critic)
+
+    # dummy observation and actions
+    batch_size = 4
+    obs = torch.randn(batch_size, obs_dim)
+    action = torch.randn(batch_size, action_dim)
+
+    q1, q2 = critic(obs, action)
+
+    print(f"{q1.shape=} {q1}\n{q2.shape=} {q2=}")
