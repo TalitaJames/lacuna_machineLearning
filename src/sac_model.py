@@ -17,7 +17,7 @@ https://arxiv.org/abs/1801.01290
 '''
 
 class SACAgent(Player):
-    """SAC player with code addapted from https://github.com/denisyarats/pytorch_sac"""
+    '''SAC player with code addapted from https://github.com/denisyarats/pytorch_sac'''
     def __init__(
         self,
         obs_dim,                   # Dimension of observation/state space
@@ -53,6 +53,7 @@ class SACAgent(Player):
         self.critic_target_update_frequency = critic_target_update_frequency
         self.batch_size = batch_size
         self.learnable_temperature = learnable_temperature
+        self.step = 0 # number of actions/steps taken
 
         # buffer and previous state paramaters
         self.replay_buffer = SACReplayBuffer(
@@ -116,8 +117,11 @@ class SACAgent(Player):
         self.last_reward = reward
         self.last_done = done
 
-        # #TODO Optionally, trigger learning here
-        # self.update(batch_size=self.batch_size)
+        self.step += 1
+        # Optionally, trigger learning here
+        if len(self.replay_buffer) >= self.batch_size:
+            # print(f"Learning step, {self.step=}")
+            self.update(self.step)
 
 
     def train(self, training=True):
@@ -153,8 +157,7 @@ class SACAgent(Player):
     # ... (rest of the update_critic, update_actor_and_alpha, update methods as before)
 
 
-    def update_critic(self, obs, action, reward, next_obs, not_done, logger,
-                      step):
+    def update_critic(self, obs, action, reward, next_obs, not_done, step):# logger, step):
         dist = self.actor(next_obs) # get the
         next_action = dist.rsample()
         log_prob = dist.log_prob(next_action).sum(-1, keepdim=True)
@@ -168,16 +171,16 @@ class SACAgent(Player):
         current_Q1, current_Q2 = self.critic(obs, action)
         critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(
             current_Q2, target_Q)
-        logger.log('train_critic/loss', critic_loss, step)
+        # logger.log('train_critic/loss', critic_loss, step)
 
         # Optimize the critic
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
 
-        self.critic.log(logger, step)
+        # self.critic.log(logger, step)
 
-    def update_actor_and_alpha(self, obs, logger, step):
+    def update_actor_and_alpha(self, obs, step): #logger, step):
         dist = self.actor(obs)
         action = dist.rsample()
         log_prob = dist.log_prob(action).sum(-1, keepdim=True)
@@ -186,36 +189,36 @@ class SACAgent(Player):
         actor_Q = torch.min(actor_Q1, actor_Q2)
         actor_loss = (self.alpha.detach() * log_prob - actor_Q).mean()
 
-        logger.log('train_actor/loss', actor_loss, step)
-        logger.log('train_actor/target_entropy', self.target_entropy, step)
-        logger.log('train_actor/entropy', -log_prob.mean(), step)
+        # logger.log('train_actor/loss', actor_loss, step)
+        # logger.log('train_actor/target_entropy', self.target_entropy, step)
+        # logger.log('train_actor/entropy', -log_prob.mean(), step)
 
         # optimize the actor
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
 
-        self.actor.log(logger, step)
+        # self.actor.log(logger, step)
 
         if self.learnable_temperature:
             self.log_alpha_optimizer.zero_grad()
             alpha_loss = (self.alpha *
                           (-log_prob - self.target_entropy).detach()).mean()
-            logger.log('train_alpha/loss', alpha_loss, step)
-            logger.log('train_alpha/value', self.alpha, step)
+            # logger.log('train_alpha/loss', alpha_loss, step)
+            # logger.log('train_alpha/value', self.alpha, step)
             alpha_loss.backward()
             self.log_alpha_optimizer.step()
 
-    def update(self, replay_buffer, logger, step):
-        obs, action, reward, next_obs, not_done = replay_buffer.sample(
+    def update(self, step, logger=None):
+        obs, action, reward, next_obs, not_done = self.replay_buffer.sample(
             self.batch_size)
 
-        logger.log('train/batch_reward', reward.mean(), step)
+        # logger.log('train/batch_reward', reward.mean(), step)
 
-        self.update_critic(obs, action, reward, next_obs, not_done, logger, step)
+        self.update_critic(obs, action, reward, next_obs, not_done, step) #logger, step)
 
         if step % self.actor_update_frequency == 0:
-            self.update_actor_and_alpha(obs, logger, step)
+            self.update_actor_and_alpha(obs, step)# logger, step)
 
         if step % self.critic_target_update_frequency == 0:
             utils.soft_update_params(self.critic, self.critic_target,
@@ -250,7 +253,7 @@ if __name__ == "__main__":
     }
 
     sac_agent = SACAgent(**sacParams)
-    print(f"SAC agent created with name: {sac_agent.getName()}")
+    print(f"SAC agent created with name: {sac_agent}")
 
     # Fake testing data
     for i in range(20):
