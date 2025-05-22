@@ -62,8 +62,15 @@ def mlp(input_dim, hidden_dim, output_dim, hidden_depth, output_mod=None):
     return nn.Sequential(*mods)
 
 def weight_init(m):
-    """Custom weight init for Conv2D and Linear layers."""
+    '''Custom weight init for Conv2D and Linear layers
+    Coppied from:  https://github.com/denisyarats/pytorch_sac '''
     if isinstance(m, nn.Linear):
         nn.init.orthogonal_(m.weight.data)
         if hasattr(m.bias, 'data'):
             m.bias.data.fill_(0.0)
+
+def soft_update_params(net, target_net, tau):
+    '''Coppied from:  https://github.com/denisyarats/pytorch_sac '''
+    for param, target_param in zip(net.parameters(), target_net.parameters()):
+        target_param.data.copy_(tau * param.data +
+                                (1 - tau) * target_param.data)
