@@ -2,7 +2,10 @@ import time
 from lacunaBoard import *
 from player import HumanPlayer, RandomPlayer
 from ppoModel import PPOAgent
+from sac_model import SACAgent
+import utils
 import json
+
 
 
 def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
@@ -49,7 +52,7 @@ def train_models(episodesCount, playerA, playerB, gameArgs = {"flowerCount": 7, 
 
         if i % 5_000 == 0 and i > 0: # periodicly backup models
             print(f"Episode {i} of {episodesCount}")
-            # utils.backup_models([playerA, playerB], f"models/episode_{i}")
+            utils.backup_models([playerA, playerB], f"models/episode_{i}")
 
     #TODO properly save models
 
@@ -63,8 +66,8 @@ def evaluate_models():
 if __name__ == "__main__":
 
     # Init the config and players
-    # sacParams = utils.load_config('config/sac.json')
-    # sacPlayerFoo = SACAgent(**sacParams)
+    sacParams = utils.load_config('config/sac.json')
+    sacPlayerFoo = SACAgent(**sacParams)
     randomPlayer = RandomPlayer()
     ppoFoo = PPOAgent()
     ppoBaz = PPOAgent()
