@@ -60,12 +60,12 @@ class PPOMemory:
 #policy network - maps states to action probabilities
 #This is used in choose_action and during training for policy update
 class PPOActorNetwork(nn.Module):#Policy
-    def __init__(self, n_actions, input_dims, alpha, fc1_dims, fc2_dims, chkpt_dir):
+    def __init__(self, n_actions, obs_dim, alpha, fc1_dims, fc2_dims, chkpt_dir):
         super(PPOActorNetwork, self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'actor_torch_ppo')
         self.actor = nn.Sequential(
-                nn.Linear(*input_dims, fc1_dims),
+                nn.Linear(*obs_dim, fc1_dims),
                 nn.ReLU(),
                 nn.Linear(fc1_dims, fc2_dims),
                 nn.ReLU(),
@@ -94,13 +94,13 @@ class PPOActorNetwork(nn.Module):#Policy
 
 #Value network - estimates how good a given state is
 class PPOCriticNetwork(nn.Module):#Value
-    def __init__(self, input_dims, alpha, fc1_dims, fc2_dims, chkpt_dir):
+    def __init__(self, obs_dim, alpha, fc1_dims, fc2_dims, chkpt_dir):
         super(PPOCriticNetwork, self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'critic_torch_ppo')
         #Feedfoward neural netowrk for estimating the state-value function V(s)
         self.critic = nn.Sequential(
-                nn.Linear(*input_dims, fc1_dims),
+                nn.Linear(*obs_dim, fc1_dims),
                 nn.ReLU(),
                 nn.Linear(fc1_dims, fc2_dims),
                 nn.ReLU(),
@@ -122,27 +122,25 @@ class PPOCriticNetwork(nn.Module):#Value
         self.load_state_dict(T.load(self.checkpoint_file))
 
 class PPOAgent(Player):
-    def __init__(self, n_actions = 2, input_dims = (2,)):
+    def __init__(self, n_actions = 2, obs_dim = (2,)):
 
         #change me for fine tunring
         self.gamma = 0.99 #
-        self.policy_clip = 0.2 #policy rate of change max
+        self.policy_clip = 0.2 #Policy rate of change max
         self.n_epochs = 100
         self.gae_lambda = 0.95
         self.critic_coeff = 0.5
-        self.batch_size=64
-        self.alpha = 0.003 #leanring rate
+        self.batch_size=64 # Batch size for updates
+        self.alpha = 0.003 # Learning rate
 
         self.fc1_dims=256 #number of neurons in the first hidden layer
         self.fc2_dims=256 #number of neurons in the second hidden layer
 
         self.chkpt_dir='tmp/ppo'
 
-        self.observation = input_dims
-
         #create networks and memory
-        self.actor = PPOActorNetwork(n_actions, input_dims, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
-        self.critic = PPOCriticNetwork(input_dims, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
+        self.actor = PPOActorNetwork(n_actions, obs_dim, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
+        self.critic = PPOCriticNetwork(obs_dim, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
         self.memory = PPOMemory(self.batch_size)
 
     #----MEMORY FUNCTIONS----
@@ -176,10 +174,10 @@ class PPOAgent(Player):
 
     def receive_observation(self, observation, reward, done, info):
         self.observation = observation
-        store_memory()
+        #store_memory()
         print(f"You got a reward of {reward:0.2f}, is the game done? {done}")
-        if len(self.states) >= batch_size:
-            self.learn()
+        # if len(self.states) >= batch_size:
+        #     self.learn()
 
 
     def plot_learning_curve(x, scores, figure_file):
@@ -255,3 +253,6 @@ class PPOAgent(Player):
         #clear memort after update
         self.memory.clear_memory()
 
+if __name__ == '__main__':
+    print("HELLOW WOLRD")
+    ppoAgent = PPOAgent()

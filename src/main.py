@@ -64,18 +64,14 @@ def evaluate_models():
 
 
 if __name__ == "__main__":
-
     # Init the config and players
-    sacParams = utils.load_config('config/sac.json')
-    sacPlayerFoo = SACAgent(**sacParams)
-    randomPlayer = RandomPlayer()
     ppoFoo = PPOAgent()
     ppoBaz = PPOAgent()
 
-    print(f"Training {randomPlayer} vs {randomPlayer}")
+    print(f"Training ppoFoo vs ppoBaz")
 
     start_time = time.time()
-    train_models(10_000, randomPlayer, randomPlayer)
+    train_models(10_000, ppoFoo, ppoBaz)
     end_time = time.time()
 
     execution_time = end_time - start_time
