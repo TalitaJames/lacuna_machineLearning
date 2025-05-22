@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 ''' An abstract base class to ensure all agents have required playing models '''
@@ -20,7 +21,7 @@ class Player(ABC):
     def save(self, filepath):
         pass
 
-    def getName(self):
+    def __str__(self):
         ''' returns the name of the player '''
         return self.__class__.__name__
 
@@ -75,3 +76,24 @@ class HumanPlayer(Player):
 
     def save(self, filename):
         print(f"You are a human! You can't save your brain")
+
+
+class RandomPlayer(Player):
+    def __init__(self, radius=1.0):
+        self.radius = radius
+
+    def select_action(self):
+        # Random angle and radius for uniform sampling in a circle
+        theta = np.random.uniform(0, 2 * np.pi)
+        r = self.radius * np.sqrt(np.random.uniform(0, 1))
+        x = r * np.cos(theta)
+        y = r * np.sin(theta)
+        return x, y
+
+    def receive_observation(self, observation, reward, done, info):
+        # Random player does not use observations
+        pass
+
+    def save(self, filepath):
+        # Nothing to save for a random player
+        pass

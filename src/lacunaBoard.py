@@ -70,14 +70,13 @@ class LacunaBoard:
         # Flowers on the board (flattened)
         flower_positions = []
         for node_id, data in self.flowerPositions_initial:
-            flowerPos = [np.nan, np.nan, np.nan]
+            flowerPos = [-999, -999, -999]
             if node_id in self.flowerGraph.nodes():
                 flowerPos=[*data['pos'], data['colorID']]
             flower_positions.extend(flowerPos)
 
         # Player token positions (flattened, NaNs replaced with zeros or a mask)
-        player_tokens = self.userTokenPositions.flatten()
-        # player_tokens = np.nan_to_num(self.userTokenPositions, nan=0.0).flatten()
+        player_tokens = np.nan_to_num(self.userTokenPositions, nan=0.0).flatten()
 
         # Flowers collected by each player
         collected = self.userFlowers.flatten()
@@ -86,8 +85,11 @@ class LacunaBoard:
         turn = [1.0 if self.isPlayerATurn else 0.0]
 
         # Concatenate all parts into a single observation vector
-        print(f"{len(flower_positions)=}, {len(player_tokens)=}, {len(collected)=}")
         observation = np.concatenate([flower_positions, player_tokens, collected])
+
+        if(np.isnan(observation).any()): # panic if there are NaNs
+            raise ValueError(f"Observation contains NaN values\n{observation=}")
+
         return observation
 
     def take_turn(self, x, y):
