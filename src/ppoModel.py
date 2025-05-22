@@ -254,5 +254,61 @@ class PPOAgent(Player):
         self.memory.clear_memory()
 
 if __name__ == '__main__':
-    print("HELLOW WOLRD")
-    ppoAgent = PPOAgent()
+    print("HELLOW WOLRD - Testing ACTOR")
+    # Assuming PPOActorNetwork is already defined above this
+
+    # Test parameters
+    n_actions = 2
+    obs_dim = (4,)  # e.g. 4-dimensional observation space
+    alpha = 0.0003
+    fc1_dims = 64
+    fc2_dims = 64
+    chkpt_dir = './tmp_test'
+
+    # Ensure the checkpoint directory exists
+    os.makedirs(chkpt_dir, exist_ok=True)
+
+    # Instantiate the actor network
+    actor = PPOActorNetwork(n_actions, obs_dim, alpha, fc1_dims, fc2_dims, chkpt_dir)
+
+    # Create a dummy observation (batch of 1)
+    dummy_obs = T.randn(1, *obs_dim).to(actor.device)
+
+    # Pass through the network
+    mean, std = actor(dummy_obs)
+
+    # Print the results
+    print("Mean:", mean)
+    print("Standard deviation:", std)
+
+    # Save and load checkpoint test
+    actor.save_checkpoint()
+    actor.load_checkpoint()
+
+    # Run forward again to ensure no errors after loading
+    mean2, std2 = actor(dummy_obs)
+    print("Post-load Mean:", mean2)
+    print("Post-load Standard deviation:", std2)
+
+    print("HELLOW WOLRD - Testing CRITIC")
+    os.makedirs(chkpt_dir, exist_ok=True)
+
+    # Instantiate the critic network
+    critic = PPOCriticNetwork(obs_dim, alpha, fc1_dims, fc2_dims, chkpt_dir)
+
+    # Create a dummy observation (batch of 1)
+    dummy_obs = T.randn(1, *obs_dim).to(critic.device)
+
+    # Forward pass through the critic
+    value = critic(dummy_obs)
+
+    # Print the result
+    print("Value estimate:", value)
+
+    # Test checkpoint save/load
+    critic.save_checkpoint()
+    critic.load_checkpoint()
+
+    # Forward again after loading
+    value2 = critic(dummy_obs)
+    print("Post-load Value estimate:", value2)
