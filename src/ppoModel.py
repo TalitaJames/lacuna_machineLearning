@@ -122,7 +122,7 @@ class PPOCriticNetwork(nn.Module):#Value
         self.load_state_dict(T.load(self.checkpoint_file))
 
 class PPOAgent(Player):
-    def __init__(self, n_actions = 2, obs_dim = (2,)):
+    def __init__(self, n_actions = 2, obs_dim = (185,)):
 
         #change me for fine tunring
         self.gamma = 0.99 #
@@ -158,24 +158,26 @@ class PPOAgent(Player):
         self.critic.load_checkpoint()
 
     def select_action (self):
-        state = T.tensor([self.observation], dtype=T.float).to(self.actor.device) #replace this with the states of the lacuna board
+        state = T.tensor([self.observation], dtype=T.float).to(self.actor.device)
 
         mean, std = self.actor(state)
         dist = T.distributions.Normal(mean, std)
         value = self.critic(state)
         action = dist.sample()
+        action = T.clamp(action, min=-1.0, max=1.0)
 
-        probs = T.squeeze(dist.log_prob(action)).item()
-        action = T.squeeze(action).item()
-        value = T.squeeze(value).item()
-
-        return action, probs, value
+        log_probs = dist.log_prob(action).sum(dim=-1)  # sum over action dimensions
+        probs = log_probs.item()
+        action = action.squeeze().cpu().numpy()  # return as NumPy array
+        value = value.item()
+        #print(f"select action is reuringin: action:{action}, probs:{probs}, value:{value}")
+        return action#, probs, value WE MUST ALL PANIC! find new way to give these values to PPO
 
 
     def receive_observation(self, observation, reward, done, info):
         self.observation = observation
         #store_memory()
-        print(f"You got a reward of {reward:0.2f}, is the game done? {done}")
+        #print(f"PPO HAS RECIVED AN OBSERVATION...... and it doesnt look good :( for ppo to win this")
         # if len(self.states) >= batch_size:
         #     self.learn()
 
@@ -259,7 +261,7 @@ if __name__ == '__main__':
 
     # Test parameters
     n_actions = 2
-    obs_dim = (4,)  # e.g. 4-dimensional observation space
+    obs_dim = (185,) 
     alpha = 0.0003
     fc1_dims = 64
     fc2_dims = 64

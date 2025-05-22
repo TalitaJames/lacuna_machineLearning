@@ -11,6 +11,8 @@ import json
 def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
     '''Play a game of Lacuna with the given players and environment.'''
     observation = gameEnv.get_observation()
+    #print(f"the observation recived is: {observation}")
+    #print(f"the observation size is:{observation.size}")
     playerA.receive_observation(observation, 0, False, {})
     playerB.receive_observation(observation, 0, False, {})
 
@@ -21,12 +23,15 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
     players = [playerA, playerB]
     while not gameEnv.is_game_finished():
         for i, player in enumerate(players):
+            #print("Lets select an ation")
             x, y = player.select_action()
+            #print(f"the selected action is x:{x} and y:{y} what a very poor decision")
             observation, reward, done, info = gameEnv.take_turn(x, y)
             player.receive_observation(observation, reward, done, info)
 
             if verbose:
-                print(f"Player {i} - {player} entered ({x:0.2f}, {x:0.2f}) for a reward of {reward:0.3f}")
+                #print(f"Player {i} - {player} entered ({x:0.2f}, {x:0.2f}) for a reward of {reward:0.3f}")
+                pass
 
             if viewGame:
                 fig, ax = gameEnv.view_board()
@@ -47,6 +52,7 @@ def train_models(episodesCount, playerA, playerB, gameArgs = {"flowerCount": 7, 
     for i in range(episodesCount):
         # generate new random game env, and have both competitors play
         tokens = new_random_lacuna_tokens(**gameArgs)
+        print(f"Game  {i} of {episodesCount}")
         gameEnv = LacunaBoard(tokens, **gameArgs)
         play_game(gameEnv, playerA, playerB, viewGame, verbose)
 
@@ -71,7 +77,7 @@ if __name__ == "__main__":
     print(f"Training ppoFoo vs ppoBaz")
 
     start_time = time.time()
-    #train_models(10_000, ppoFoo, ppoBaz)
+    train_models(10_000, ppoFoo, ppoBaz, viewGame=False, verbose=True)
     end_time = time.time()
 
     execution_time = end_time - start_time
