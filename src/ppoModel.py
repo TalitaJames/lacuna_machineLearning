@@ -39,8 +39,8 @@ class PPOMemory:
             np.array(self.dones),\
             batches
 
-    #called in Actor-Critic Networks to store data
     def store_memory(self, state, action, probs, vals, reward, done):
+        print(f"I just sotred a state with {action}, {probs}, {vals}, {reward}")
         self.states.append(state)
         self.actions.append(action)
         self.probs.append(probs)
@@ -56,6 +56,9 @@ class PPOMemory:
         self.rewards = []
         self.dones = []
         self.vals = []
+
+    def __len__(self):
+        return len(self.states)
 
 #policy network - maps states to action probabilities
 #This is used in choose_action and during training for policy update
@@ -127,10 +130,10 @@ class PPOAgent(Player):
         #change me for fine tunring
         self.gamma = 0.99 #
         self.policy_clip = 0.2 #Policy rate of change max
-        self.n_epochs = 100
+        self.n_epochs = 5
         self.gae_lambda = 0.95
         self.critic_coeff = 0.5
-        self.batch_size=64 # Batch size for updates
+        self.batch_size=32 # Batch size for updates
         self.alpha = 0.003 # Learning rate
 
         self.fc1_dims=256 #number of neurons in the first hidden layer
@@ -142,6 +145,10 @@ class PPOAgent(Player):
         self.actor = PPOActorNetwork(n_actions, obs_dim, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
         self.critic = PPOCriticNetwork(obs_dim, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
         self.memory = PPOMemory(self.batch_size)
+
+        self.lastAction = 0
+        self.lastActionProbs = 0
+        self.lastActionVals = 0
 
     #----MEMORY FUNCTIONS----
     def remember(self, state, action, probs, vals, reward, done):
@@ -164,24 +171,26 @@ class PPOAgent(Player):
         dist = T.distributions.Normal(mean, std)
         value = self.critic(state)
         action = dist.sample()
-        action = T.clamp(action, min=-1.0, max=1.0)
+        self.lastAction = action
 
         log_probs = dist.log_prob(action).sum(dim=-1)  # sum over action dimensions
         probs = log_probs.item()
         action = action.squeeze().cpu().numpy()  # return as NumPy array
         value = value.item()
+        self.lastActionProbs = probs
+        self.lastActionVals = value
         #print(f"select action is reuringin: action:{action}, probs:{probs}, value:{value}")
         return action#, probs, value WE MUST ALL PANIC! find new way to give these values to PPO
 
 
     def receive_observation(self, observation, reward, done, info):
         self.observation = observation
-        #store_memory()
-        #print(f"PPO HAS RECIVED AN OBSERVATION...... and it doesnt look good :( for ppo to win this")
-        # if len(self.states) >= batch_size:
-        #     self.learn()
-
-
+        self.remember(observation, self.lastAction, self.lastActionProbs, self.lastActionVals, reward, done)
+        # #print(f"PPO HAS RECIVED AN OBSERVATION...... and it doesnt look good :( for ppo to win this")
+        if len(self.memory) >= self.batch_size:
+            print("Hehe Im learnding")
+            self.learn()
+            
 
     def save(self, filepath):
         print(f"SAVE ME!!!!!!!!! (Later)")
@@ -190,7 +199,7 @@ class PPOAgent(Player):
     def learn(self):
         #get training data from memory
         for _ in range(self.n_epochs):
-            state_arr, action_arr, old_prob_arr, vals_arr,reward_arr, dones_arr, batches = self.memory.generate_batches()
+            state_arr, action_arr, old_prob_arr, vals_arr,reward_arr, dones_arr, batches = self.memory.generate_batches() #AHAHAHAHAHAHAHAHAHAHAHAAH PANIC!!! AN ERROR HAPPENS RIGHT HERE BE CAREFULL BE FORE IT KILLS US ALL!!!!!!!!
 
             values = vals_arr
 

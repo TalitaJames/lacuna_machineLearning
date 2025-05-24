@@ -101,7 +101,7 @@ if __name__ == "__main__":
     print(f"Training ppoFoo vs ppoBaz")
 
     start_time = time.time()
-    train_models(1_000, ppoFoo, ppoBaz, viewGame=False, verbose=False)
+    train_models(10_000, ppoFoo, ppoBaz, viewGame=False, verbose=False)
     end_time = time.time()
 
     ppoFoo.plot_learning_curve()
