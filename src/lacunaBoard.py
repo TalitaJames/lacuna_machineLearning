@@ -115,6 +115,13 @@ class LacunaBoard:
           + a smaller reward based on some function f(d), where d is euclidian distance to each flower (reward being close to many flowers)
           + big reward if game is over and the player is the winner
         '''
+        #Get penalty for placing pawn outside of the board
+        pawnPlacementPenalty = 0
+
+        if x**2 + y**2 > 1:
+            pawnPlacementPenalty = -50
+            #print("HEY! YOU CANT DO THAT YOU CHEATING LITTLE SHIT OF AN AI MODEL!!!!!")
+
         # Reward for gaining flowers (number of flowers collected this turn)
         flowerGainedReward = 7 * (1 if colectedFlowers else 0)
 
@@ -129,7 +136,7 @@ class LacunaBoard:
 
         gameOverReward = 50 if self.is_game_finished() and self.current_winner() == player else 0
 
-        reward = flowerGainedReward + flowerProximityReward + gameOverReward
+        reward = flowerGainedReward + flowerProximityReward + gameOverReward + pawnPlacementPenalty
         # print(f"reward is {flowerGainedReward} + {flowerProximityReward:0.4f} + {gameOverReward} = {reward}")
 
 

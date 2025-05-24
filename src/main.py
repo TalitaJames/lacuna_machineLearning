@@ -1,6 +1,7 @@
 import time
 from lacunaBoard import *
 from player import HumanPlayer, RandomPlayer
+import matplotlib.pyplot as plt
 from ppoModel import PPOAgent
 from sac_model import SACAgent
 import utils
@@ -21,6 +22,8 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
         plt.show()
 
     players = [playerA, playerB]
+    total_rewards = [0.0, 0.0] 
+    
     while not gameEnv.is_game_finished():
         for i, player in enumerate(players):
             #print("Lets select an ation")
@@ -28,9 +31,10 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
             #print(f"the selected action is x:{x} and y:{y} what a very poor decision")
             observation, reward, done, info = gameEnv.take_turn(x, y)
             player.receive_observation(observation, reward, done, info)
+            total_rewards[i] += reward
 
             if verbose:
-                #print(f"Player {i} - {player} entered ({x:0.2f}, {x:0.2f}) for a reward of {reward:0.3f}")
+                print(f"Player {i} - {player} entered ({x:0.2f}, {x:0.2f}) for a reward of {reward:0.3f}")
                 pass
 
             if viewGame:
@@ -40,6 +44,7 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
     if verbose:
         print(f"Game finished! {gameEnv.calculate_winner()}, {playerA if gameEnv.calculate_winner() else playerB} wins!")
 
+    return total_rewards
 
 def train_models(episodesCount, playerA, playerB, gameArgs = {"flowerCount": 7, "radius": 1}, viewGame=False, verbose=False):
     ''' args:
@@ -49,18 +54,37 @@ def train_models(episodesCount, playerA, playerB, gameArgs = {"flowerCount": 7, 
     '''
 
     print(f"Training {playerA} vs {playerB} for {episodesCount} episodes with {gameArgs} and {viewGame=}")
+
+    rewards_A = []
+    rewards_B = []
+
     for i in range(episodesCount):
         # generate new random game env, and have both competitors play
         tokens = new_random_lacuna_tokens(**gameArgs)
         print(f"Game  {i} of {episodesCount}")
         gameEnv = LacunaBoard(tokens, **gameArgs)
-        play_game(gameEnv, playerA, playerB, viewGame, verbose)
+        total_rewards = play_game(gameEnv, playerA, playerB, viewGame, verbose)
+
+        rewards_A.append(total_rewards[0])
+        rewards_B.append(total_rewards[1])
 
         if i % 5_000 == 0 and i > 0: # periodicly backup models
             print(f"Episode {i} of {episodesCount}")
             utils.backup_models([playerA, playerB], f"models/episode_{i}")
 
     #TODO properly save models
+
+    # Plot rewards at the end of training
+    plt.figure(figsize=(12, 6))
+    plt.plot(rewards_A, label=f'{playerA} A Rewards')
+    plt.plot(rewards_B, label=f'{playerB} B Rewards')
+    plt.xlabel("Episode")
+    plt.ylabel("Total Reward")
+    plt.title("Total Reward per Episode")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
 
 
 
@@ -77,8 +101,10 @@ if __name__ == "__main__":
     print(f"Training ppoFoo vs ppoBaz")
 
     start_time = time.time()
-    train_models(10_000, ppoFoo, ppoBaz, viewGame=False, verbose=True)
+    train_models(1_000, ppoFoo, ppoBaz, viewGame=False, verbose=False)
     end_time = time.time()
+
+    ppoFoo.plot_learning_curve()
 
     execution_time = end_time - start_time
     print(f"Execution time: {(execution_time)/60:.4f} mins")
