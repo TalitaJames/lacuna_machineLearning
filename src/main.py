@@ -61,14 +61,14 @@ def train_models(episodesCount, playerA, playerB, gameArgs = {"flowerCount": 7, 
     for i in range(episodesCount):
         # generate new random game env, and have both competitors play
         tokens = new_random_lacuna_tokens(**gameArgs)
-        print(f"Game  {i} of {episodesCount}")
+        #print(f"Game  {i} of {episodesCount}")
         gameEnv = LacunaBoard(tokens, **gameArgs)
         total_rewards = play_game(gameEnv, playerA, playerB, viewGame, verbose)
 
         rewards_A.append(total_rewards[0])
         rewards_B.append(total_rewards[1])
 
-        if i % 5_000 == 0 and i > 0: # periodicly backup models
+        if i % 1_000 == 0 and i > 0: # periodicly backup models
             print(f"Episode {i} of {episodesCount}")
             utils.backup_models([playerA, playerB], f"models/episode_{i}")
 
