@@ -21,6 +21,10 @@ class Player(ABC):
     def save(self, filepath):
         pass
 
+    @abstractmethod
+    def load(self, filepath):
+        pass
+
     def __str__(self):
         ''' returns the name of the player '''
         return self.__class__.__name__
@@ -74,8 +78,12 @@ class HumanPlayer(Player):
     def receive_observation(self, observation, reward, done, info):
         print(f"You got a reward of {reward:0.2f}, is the game done? {done}")
 
-    def save(self, filename):
-        print(f"You are a human! You can't save your brain")
+    # Nothing to save/load for a human player
+    def save(self, filepath):
+        pass
+
+    def load(self, filepath):
+        pass
 
 
 class RandomPlayer(Player):
@@ -94,6 +102,9 @@ class RandomPlayer(Player):
         # Random player does not use observations
         pass
 
+    # Nothing to save/load for a random player
     def save(self, filepath):
-        # Nothing to save for a random player
+        pass
+
+    def load(self, filepath):
         pass
