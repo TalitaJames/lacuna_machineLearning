@@ -196,8 +196,7 @@ class PPOAgent(Player):
         value = value.item()
         self.lastActionProbs = probs
         self.lastActionVals = value
-        #print(f"select action is reuringin: action:{action}, probs:{probs}, value:{value}")
-        return action#, probs, value WE MUST ALL PANIC! find new way to give these values to PPO
+        return action
 
 
     def receive_observation(self, observation, reward, done, info):
@@ -206,9 +205,7 @@ class PPOAgent(Player):
         if self.lastAction is not None:
             self.remember(observation, self.lastAction, self.lastActionProbs, self.lastActionVals, reward, done)
 
-        # #print(f"PPO HAS RECIVED AN OBSERVATION...... and it doesnt look good :( for ppo to win this")
         if len(self.memory) >= self.batch_size:
-            print("Hehe Im learnding")
             self.learn()
 
     def save(self, filepath):

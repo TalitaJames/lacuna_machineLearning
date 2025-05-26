@@ -118,9 +118,11 @@ class LacunaBoard:
         #Get penalty for placing pawn outside of the board
         pawnPlacementPenalty = 0
 
-        if x**2 + y**2 > 1:
-            pawnPlacementPenalty = -50
-            #print("HEY! YOU CANT DO THAT YOU CHEATING LITTLE SHIT OF AN AI MODEL!!!!!")
+        radius = np.sqrt(x**2 + y**2)
+        if radius > 1:
+            pawnPlacementPenalty = -5 * (radius - 1)  # Scales with how far out it is
+        else:
+            pawnPlacementPenalty = 1 - radius  # Small positive reward for staying closer to centre
 
         # Reward for gaining flowers (number of flowers collected this turn)
         flowerGainedReward = 7 * (1 if colectedFlowers else 0)
