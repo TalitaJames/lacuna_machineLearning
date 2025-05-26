@@ -125,23 +125,36 @@ class PPOCriticNetwork(nn.Module):#Value
         self.load_state_dict(T.load(self.checkpoint_file))
 
 class PPOAgent(Player):
-    def __init__(self, n_actions = 2, obs_dim = (185,)):
+    def __init__(
+        self,
+        n_actions,          # Number of action dimensions (e.g., 2 for (x, y) moves)
+        obs_dim,            # Number of dimensions in the observation vector
 
-        #change me for fine tunring
-        self.gamma = 0.99 #
-        self.policy_clip = 0.2 #Policy rate of change max
-        self.n_epochs = 5
-        self.gae_lambda = 0.95
-        self.critic_coeff = 0.5
-        self.alpha = 0.003 # Learning rate
+        gamma,              # Discount factor for future rewards
+        policy_clip,        # Policy rate of change max
+        n_epochs,           # Per learning update
+        gae_lambda,         # Lambda for Generalized Advantage Estimation (GAE)
+        critic_coeff,       # Weighting for critic loss in total loss
+        alpha,              # Learning rate for both actor and critic
 
-        self.batch_size = 2048      # <-- number of transitions before learning
-        self.mini_batch_size = 64    # <-- size of each training batch
+        batch_size,         # Number of transitions before learning
+        mini_batch_size,    # Size of each training batch
+        fc1_dims,           # Number of neurons in the first hidden layer
+        fc2_dims,           # Number of neurons in the second hidden layer
+        chkpt_dir,          # Directory to save/load model checkpoints
+        ):
 
-        self.fc1_dims=256 #number of neurons in the first hidden layer
-        self.fc2_dims=256 #number of neurons in the second hidden layer
-
-        self.chkpt_dir='tmp/ppo'
+        self.gamma = gamma
+        self.policy_clip = policy_clip
+        self.n_epochs = n_epochs
+        self.gae_lambda = gae_lambda
+        self.critic_coeff = critic_coeff
+        self.alpha = alpha
+        self.batch_size = batch_size
+        self.mini_batch_size = mini_batch_size
+        self.fc1_dims = fc1_dims
+        self.fc2_dims = fc2_dims
+        self.chkpt_dir = chkpt_dir
 
         #create networks and memory
         self.actor = PPOActorNetwork(n_actions, obs_dim, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
@@ -197,7 +210,6 @@ class PPOAgent(Player):
         if len(self.memory) >= self.batch_size:
             print("Hehe Im learnding")
             self.learn()
-            
 
     def save(self, filepath):
         print(f"SAVE ME!!!!!!!!! (Later)")

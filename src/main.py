@@ -95,8 +95,10 @@ def evaluate_models():
 
 if __name__ == "__main__":
     # Init the config and players
-    ppoFoo = PPOAgent()
-    ppoBaz = PPOAgent()
+
+
+    ppoFoo = PPOAgent(**ppoKwargs)
+    ppoBaz = PPOAgent(**ppoKwargs)
 
     print(f"Training ppoFoo vs ppoBaz")
 

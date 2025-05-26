@@ -1,0 +1,15 @@
+{
+"n_actions": 2,
+"obs_dim": 185,
+"gamma": 0.99,
+"policy_clip": 0.2,
+"n_epochs": 5,
+"gae_lambda": 0.95,
+"critic_coeff": 0.5,
+"alpha": 0.003,
+"batch_size": 2048,
+"mini_batch_size": 64,
+"fc1_dims": 256,
+"fc2_dims": 256,
+"chkpt_dir": "tmp/ppo"
+}
