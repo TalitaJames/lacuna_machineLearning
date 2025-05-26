@@ -89,12 +89,6 @@ class PPOActorNetwork(nn.Module):#Policy
         return mean, std# Return mean and standard deviation for Gaussian distribution
 
 
-    def save_checkpoint(self):
-        T.save(self.state_dict(), self.checkpoint_file)
-
-    def load_checkpoint(self):
-        self.load_state_dict(T.load(self.checkpoint_file))
-
 #Value network - estimates how good a given state is
 class PPOCriticNetwork(nn.Module):#Value
     def __init__(self, obs_dim, alpha, fc1_dims, fc2_dims, chkpt_dir):
@@ -117,12 +111,6 @@ class PPOCriticNetwork(nn.Module):#Value
     def forward(self, state):
         value = self.critic(state)
         return value
-
-    def save_checkpoint(self):
-        T.save(self.state_dict(), self.checkpoint_file)
-
-    def load_checkpoint(self):
-        self.load_state_dict(T.load(self.checkpoint_file))
 
 class PPOAgent(Player):
     def __init__(
@@ -169,16 +157,6 @@ class PPOAgent(Player):
     def remember(self, state, action, probs, vals, reward, done):
         self.memory.store_memory(state, action, probs, vals, reward, done)
 
-    def save_models(self):
-        print('----saving networks----')
-        self.actor.save_checkpoint()
-        self.critic.save_checkpoint()
-
-    def load_models(self):
-        print('----loading networks----')
-        self.actor.load_checkpoint()
-        self.critic.load_checkpoint()
-
     def select_action (self):
         state = T.tensor([self.observation], dtype=T.float).to(self.actor.device)
 
@@ -208,8 +186,22 @@ class PPOAgent(Player):
         if len(self.memory) >= self.batch_size:
             self.learn()
 
+
     def save(self, filepath):
-        print(f"SAVE ME!!!!!!!!! (Later)")
+        '''Save the actor and critic networks to a file.'''
+        T.save({
+            'actor_state_dict': self.actor.state_dict(),
+            'critic_state_dict': self.critic.state_dict(),
+        }, filepath)
+        print(f"Saved PPO agent networks to {filepath}")
+
+    def load(self, filepath):
+        '''Load the actor and critic networks from a file.'''
+        checkpoint = T.load(filepath, map_location=self.actor.device)
+        self.actor.load_state_dict(checkpoint['actor_state_dict'])
+        self.critic.load_state_dict(checkpoint['critic_state_dict'])
+        print(f"Loaded PPO agent networks from {filepath}")
+
 
     #main leanring fubnction, call this to train model
     def learn(self):
