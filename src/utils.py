@@ -8,7 +8,7 @@ import time
 import json
 
 
-def backup_models(models, path):
+def backup_models(models):
     '''Backup models to path, made by talita'''
     timestamp = time.strftime("%Y%m%d-%H%M%S",time.localtime())
     for number, model in enumerate(models):
