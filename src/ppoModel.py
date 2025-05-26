@@ -135,7 +135,7 @@ class PPOAgent(Player):
         self.critic_coeff = 0.5
         self.alpha = 0.003 # Learning rate
 
-        self.batch_size = 2048      # <-- number of transitions before learning
+        self.batch_size = 1024      # <-- number of transitions before learning
         self.mini_batch_size = 64    # <-- size of each training batch
 
         self.fc1_dims=256 #number of neurons in the first hidden layer
@@ -178,13 +178,11 @@ class PPOAgent(Player):
         log_probs = dist.log_prob(action).sum(dim=-1)  # sum over action dimensions
         probs = log_probs.item()
         action = action.cpu().numpy().reshape(-1)  # Always shape (n_actions,)
-
-
+        
         value = value.item()
         self.lastActionProbs = probs
         self.lastActionVals = value
-        #print(f"select action is reuringin: action:{action}, probs:{probs}, value:{value}")
-        return action#, probs, value WE MUST ALL PANIC! find new way to give these values to PPO
+        return action
 
 
     def receive_observation(self, observation, reward, done, info):
@@ -193,9 +191,7 @@ class PPOAgent(Player):
         if self.lastAction is not None:
             self.remember(observation, self.lastAction, self.lastActionProbs, self.lastActionVals, reward, done)
 
-        # #print(f"PPO HAS RECIVED AN OBSERVATION...... and it doesnt look good :( for ppo to win this")
         if len(self.memory) >= self.batch_size:
-            print("Hehe Im learnding")
             self.learn()
             
 
