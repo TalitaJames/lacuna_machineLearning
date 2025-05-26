@@ -157,8 +157,8 @@ class PPOAgent(Player):
         self.chkpt_dir = chkpt_dir
 
         #create networks and memory
-        self.actor = PPOActorNetwork(n_actions, obs_dim, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
-        self.critic = PPOCriticNetwork(obs_dim, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
+        self.actor = PPOActorNetwork(n_actions, (obs_dim,), self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
+        self.critic = PPOCriticNetwork((obs_dim,), self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
         self.memory = PPOMemory(self.mini_batch_size)
 
         self.lastAction = None
