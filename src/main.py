@@ -22,13 +22,11 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
         plt.show()
 
     players = [playerA, playerB]
-    total_rewards = [0.0, 0.0] 
-    
+    total_rewards = [0.0, 0.0] # player A, B total rewards
+
     while not gameEnv.is_game_finished():
         for i, player in enumerate(players):
-            #print("Lets select an ation")
             x, y = player.select_action()
-            #print(f"the selected action is x:{x} and y:{y} what a very poor decision")
             observation, reward, done, info = gameEnv.take_turn(x, y)
             player.receive_observation(observation, reward, done, info)
             total_rewards[i] += reward
@@ -95,18 +93,16 @@ def evaluate_models():
 
 if __name__ == "__main__":
     # Init the config and players
-
+    sacKwargs = utils.load_config("config/sac.json")
+    ppoKwargs = utils.load_config("config/ppo.json")
 
     ppoFoo = PPOAgent(**ppoKwargs)
-    ppoBaz = PPOAgent(**ppoKwargs)
 
     print(f"Training ppoFoo vs ppoBaz")
 
     start_time = time.time()
-    train_models(3_000, ppoFoo, ppoBaz, viewGame=False, verbose=False)
+    train_models(10_000, ppoFoo, ppoFoo, viewGame=False, verbose=False)
     end_time = time.time()
-
-    ppoFoo.plot_learning_curve()
 
     execution_time = end_time - start_time
     print(f"Execution time: {(execution_time)/60:.4f} mins")
