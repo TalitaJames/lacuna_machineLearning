@@ -105,6 +105,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Settings to change the running of AI lacuna code")
     parser.add_argument('-v', '--verbose', action='store_true', help="Verbose output")
     parser.add_argument('-s', '--show', action='store_true', help="See the output each turn")
+    parser.add_argument('-l', '--load', action='store_true', help="Load existing models instead of training new ones")
     parser.add_argument('-e', '--episodes', type=int, help="Number of games to repeat", default=10_000)
     args = parser.parse_args()
     #end command line arguments
@@ -113,12 +114,17 @@ if __name__ == "__main__":
     sacKwargs = utils.load_config("config/sac.json")
     ppoKwargs = utils.load_config("config/ppo.json")
 
-    ppoFoo = PPOAgent(**ppoKwargs)
+    ppoAgent = PPOAgent(**ppoKwargs)
+    sacAgent = SACAgent(**sacKwargs)
+    rndAgent = RandomPlayer()
 
-    print(f"Training ppoFoo vs ppoBaz")
+    if args.load:
+        print("Loading existing models...")
+        ppoAgent.load(f"models/{ppoAgent}")
+        sacAgent.load(f"models/{sacAgent}")
 
     start_time = time.time()
-    train_models(args.episodes, rndAgent, sacFoo, viewGame=args.show, verbose=args.verbose)
+    train_models(args.episodes, ppoAgent, sacAgent, viewGame=args.show, verbose=args.verbose)
     end_time = time.time()
 
     execution_time = end_time - start_time
