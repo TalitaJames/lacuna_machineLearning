@@ -34,7 +34,7 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
             total_rewards[i] += reward
 
             if verbose:
-                print(f"Player {i} - {player} entered ({x:0.2f}, {x:0.2f}) for a reward of {reward:0.3f}")
+                print(f"Player {i} - {player} entered ({x:0.2f}, {y:0.2f}) for a reward of {reward:0.3f}")
                 pass
 
             if viewGame:
@@ -60,7 +60,7 @@ def train_models(episodesCount, playerA, playerB, gameArgs = {"flowerCount": 7, 
 
     for i in range(episodesCount):
         # generate new random game env, and have both competitors play
-        tokens = new_random_lacuna_tokens(**gameArgs)
+        tokens = new_random_lacuna_tokens()
         #print(f"Game  {i} of {episodesCount}")
         gameEnv = LacunaBoard(tokens, **gameArgs)
         total_rewards = play_game(gameEnv, playerA, playerB, viewGame, verbose)
@@ -70,14 +70,14 @@ def train_models(episodesCount, playerA, playerB, gameArgs = {"flowerCount": 7, 
 
         if i % 1_000 == 0 and i > 0: # periodicly backup models
             print(f"Episode {i} of {episodesCount}")
-            utils.backup_models([playerA, playerB], f"models/episode_{i}")
+            #utils.backup_models([playerA, playerB], f"models/episode_{i}")
 
     #TODO properly save models
 
     # Plot rewards at the end of training
     plt.figure(figsize=(12, 6))
-    plt.plot(rewards_A, label=f'{playerA} A Rewards')
-    plt.plot(rewards_B, label=f'{playerB} B Rewards')
+    plt.plot(rewards_A, label=f'{playerA} 1 Rewards')
+    plt.plot(rewards_B, label=f'{playerB} 0 Rewards')
     plt.xlabel("Episode")
     plt.ylabel("Total Reward")
     plt.title("Total Reward per Episode")
@@ -95,18 +95,21 @@ def evaluate_models():
 
 if __name__ == "__main__":
     # Init the config and players
+    with open("config/ppo.json", "r") as f:
+        ppoKwargs = json.load(f)
 
+    with open("config/sac.json", "r") as f:
+        sacKwargs = json.load(f)
 
     ppoFoo = PPOAgent(**ppoKwargs)
-    ppoBaz = PPOAgent(**ppoKwargs)
+    ppoBaz = SACAgent(**sacKwargs)
 
     print(f"Training ppoFoo vs ppoBaz")
 
     start_time = time.time()
-    train_models(3_000, ppoFoo, ppoBaz, viewGame=False, verbose=False)
+    train_models(3_000, ppoBaz, ppoFoo, viewGame=False, verbose=False)
     end_time = time.time()
 
-    ppoFoo.plot_learning_curve()
 
     execution_time = end_time - start_time
     print(f"Execution time: {(execution_time)/60:.4f} mins")

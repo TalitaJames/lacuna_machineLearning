@@ -117,19 +117,20 @@ class LacunaBoard:
         '''
         #Get penalty for placing pawn outside of the board
         pawnPlacementPenalty = 0
-
         radius = np.sqrt(x**2 + y**2)
+
         if radius > 1:
-            pawnPlacementPenalty = -5 * (radius - 1)  # Scales with how far out it is
+            # still possible with tanh, but only up to √2
+            pawnPlacementPenalty = -2 * (radius - 1)  # soften the penalty
         else:
-            pawnPlacementPenalty = 1 - radius  # Small positive reward for staying closer to centre
+            pawnPlacementPenalty = 0.3 * (1 - radius)  # gentle reward for being closer to centre
 
         # Reward for gaining flowers (number of flowers collected this turn)
-        flowerGainedReward = 7 * (1 if colectedFlowers else 0)
+        flowerGainedReward = 10 * (1 if colectedFlowers else 0)
 
         # Reward for proximity to flowers
         flowerProximityReward = 0
-        distToFlowerRewardFn = lambda d: math.exp(-8*d) # Reward function for distance to flower
+        distToFlowerRewardFn = lambda d: math.exp(-6*d) # Reward function for distance to flower
 
         for flower in self.flowerGraph.nodes(data=True): # distance user to each flower
             flowerPos = flower[1]['pos']

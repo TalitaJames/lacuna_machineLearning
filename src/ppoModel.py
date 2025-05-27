@@ -7,7 +7,6 @@ import numpy as np
 import torch as T
 import torch.nn as nn
 import torch.optim as optim
-import matplotlib.pyplot as plt
 from torch.distributions.categorical import Categorical
 
 from player import Player
@@ -185,10 +184,14 @@ class PPOAgent(Player):
         mean, std = self.actor(state)
         dist = T.distributions.Normal(mean, std)
         value = self.critic(state)
-        action = dist.sample()
+        raw_action = dist.sample()
+        action = T.tanh(raw_action)
         self.lastAction = action
 
-        log_probs = dist.log_prob(action).sum(dim=-1)  # sum over action dimensions
+        # sum over action dimensions
+        log_probs = dist.log_prob(raw_action) - T.log(1 - action.pow(2) + 1e-7)
+        log_probs = log_probs.sum(dim=-1)
+        
         probs = log_probs.item()
         action = action.cpu().numpy().reshape(-1)  # Always shape (n_actions,)
 
