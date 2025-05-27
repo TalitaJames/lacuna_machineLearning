@@ -27,7 +27,14 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
 
     while not gameEnv.is_game_finished():
         for i, player in enumerate(players):
-            x, y = player.select_action()
+            badAction = True
+            while badAction:
+                x, y = player.select_action()
+                if gameEnv.is_valid_action(x, y):
+                    badAction = False
+                else:
+                    print(f"{player} selected ({x:0.2f}, {y:0.2f}), which isn't valid")
+
             observation, reward, done, info = gameEnv.take_turn(x, y)
             player.receive_observation(observation, reward, done, info)
             total_rewards[i] += reward
@@ -44,6 +51,7 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
 
     if verbose:
         print(f"Game finished! {gameEnv.calculate_winner()}, {playerA if gameEnv.calculate_winner() else playerB} wins!")
+        print(f"Players have {gameEnv.userFlowers} flowers")
 
     return total_rewards, winner
 
