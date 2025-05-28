@@ -34,6 +34,7 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
                     badAction = False
                 else:
                     print(f"{player} selected ({x:0.2f}, {y:0.2f}), which isn't valid")
+                    player.receive_observation(observation, -50, False, {})
 
             observation, reward, done, info = gameEnv.take_turn(x, y)
             player.receive_observation(observation, reward, done, info)
