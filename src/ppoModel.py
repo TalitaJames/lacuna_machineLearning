@@ -214,6 +214,9 @@ class PPOAgent(Player):
     def save(self, filepath):
         print(f"SAVE ME!!!!!!!!! (Later)")
 
+    def load(self, filepath):
+        print(f"SAVE ME!!!!!!!!! (Later)") 
+
     #main leanring fubnction, call this to train model
     def learn(self):
         # get training data from memory
