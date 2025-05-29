@@ -187,6 +187,12 @@ class LacunaBoard:
         '''
         return  np.sqrt(x**2 + y**2) <= self.radius
 
+    def get_distance_outside_bounds(self, x, y):
+        '''Get the distance outside of the board bounds
+        If the point is within the bounds, return 0
+        '''
+        distance = np.sqrt(x**2 + y**2) - self.radius
+        return max(0, distance)
 
     # Calculate game features
     def find_potential_moves(self):
@@ -260,6 +266,8 @@ class LacunaBoard:
             # Add the flower to the player's collection
             colorID = flower[1]['colorID']
             self.userFlowers[closestPlayer][colorID] += 1
+
+        self.flowerGraph.clear() # Clear the graph after allocating remaining flowers
 
 
     def calculate_winner(self) -> int:
