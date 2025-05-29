@@ -102,6 +102,10 @@ class LacunaBoard:
         - info: dict for debuging
         '''
 
+        # Check if the coordinates are within the board radius
+        if not self.is_valid_action(x, y):
+            raise ValueError(f"Coordinates ({x:.2f}, {y:.2f}) are outside the board radius {self.radius}")
+
 
         # do the action
         player = 0 if self.isPlayerATurn else 1
@@ -115,6 +119,15 @@ class LacunaBoard:
           + a smaller reward based on some function f(d), where d is euclidian distance to each flower (reward being close to many flowers)
           + big reward if game is over and the player is the winner
         '''
+        #Get penalty for placing pawn outside of the board
+        pawnPlacementPenalty = 0
+
+        radius = np.sqrt(x**2 + y**2)
+        if radius > 1:
+            pawnPlacementPenalty = -5 * (radius - 1)  # Scales with how far out it is
+        else:
+            pawnPlacementPenalty = 1 - radius  # Small positive reward for staying closer to centre
+
         # Reward for gaining flowers (number of flowers collected this turn)
         flowerGainedReward = 7 * (1 if colectedFlowers else 0)
 
@@ -127,9 +140,9 @@ class LacunaBoard:
             distance = np.linalg.norm(np.array([x,y]) - np.array(flowerPos))
             flowerProximityReward += distToFlowerRewardFn(distance)
 
-        gameOverReward = 50 if self.is_game_finished() and self.current_winner() == player else 0
+        gameOverReward = 100 if self.is_game_finished() and self.current_winner() == player else 0
 
-        reward = flowerGainedReward + flowerProximityReward + gameOverReward
+        reward = flowerGainedReward + flowerProximityReward + gameOverReward + pawnPlacementPenalty
         # print(f"reward is {flowerGainedReward} + {flowerProximityReward:0.4f} + {gameOverReward} = {reward}")
 
 
@@ -167,6 +180,12 @@ class LacunaBoard:
             if self._does_token_intersect(p1[1]['pos'], p2[1]['pos'], flower[1]['pos']):
                 return True
         return False  # No flower blocks the line
+
+    def is_valid_action(self, x, y):
+        '''Check if the action (x, y) is valid
+        An action is valid if it is within the board radius
+        '''
+        return  np.sqrt(x**2 + y**2) <= self.radius
 
 
     # Calculate game features
