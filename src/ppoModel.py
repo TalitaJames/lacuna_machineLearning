@@ -7,14 +7,13 @@ import numpy as np
 import torch as T
 import torch.nn as nn
 import torch.optim as optim
-import matplotlib.pyplot as plt
 from torch.distributions.categorical import Categorical
 
 from player import Player
 
 
 class PPOMemory:
-    def __init__(self, batch_size):
+    def __init__(self, mini_batch_size):
         self.states = []
         self.probs = []
         self.vals = []
@@ -22,27 +21,27 @@ class PPOMemory:
         self.rewards = []
         self.dones = []
 
-        self.batch_size = batch_size
+        self.mini_batch_size = mini_batch_size
 
     def generate_batches(self):
-        n_states = len(self.states)
-        batch_start = np.arange(0, n_states, self.batch_size)
-        indicies = np.arange(n_states, dtype=np.int64)
-        np.random.shuffle(indicies)
-        batches = [indicies[i:i+self.batch_size] for i in batch_start]
+            n_states = len(self.states)
+            batch_start = np.arange(0, n_states, self.mini_batch_size)
+            indicies = np.arange(n_states, dtype=np.int64)
+            np.random.shuffle(indicies)
+            batches = [indicies[i:i+self.mini_batch_size] for i in batch_start]
 
-        return np.array(self.states),\
-            np.array(self.actions),\
-            np.array(self.probs),\
-            np.array(self.vals),\
-            np.array(self.rewards),\
-            np.array(self.dones),\
-            batches
+            return np.array(self.states),\
+                np.array(self.actions),\
+                np.array(self.probs),\
+                np.array(self.vals),\
+                np.array(self.rewards),\
+                np.array(self.dones),\
+                batches
 
-    #called in Actor-Critic Networks to store data
     def store_memory(self, state, action, probs, vals, reward, done):
+        #print(f"I just stored a state with {action}, {probs}, {vals}, {reward}")
         self.states.append(state)
-        self.actions.append(action)
+        self.actions.append(action.detach().cpu().numpy().reshape(-1))
         self.probs.append(probs)
         self.vals.append(vals)
         self.rewards.append(reward)
@@ -57,15 +56,18 @@ class PPOMemory:
         self.dones = []
         self.vals = []
 
+    def __len__(self):
+        return len(self.states)
+
 #policy network - maps states to action probabilities
 #This is used in choose_action and during training for policy update
 class PPOActorNetwork(nn.Module):#Policy
-    def __init__(self, n_actions, input_dims, alpha, fc1_dims, fc2_dims, chkpt_dir):
+    def __init__(self, n_actions, obs_dim, alpha, fc1_dims, fc2_dims, chkpt_dir):
         super(PPOActorNetwork, self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'actor_torch_ppo')
         self.actor = nn.Sequential(
-                nn.Linear(*input_dims, fc1_dims),
+                nn.Linear(*obs_dim, fc1_dims),
                 nn.ReLU(),
                 nn.Linear(fc1_dims, fc2_dims),
                 nn.ReLU(),
@@ -94,13 +96,13 @@ class PPOActorNetwork(nn.Module):#Policy
 
 #Value network - estimates how good a given state is
 class PPOCriticNetwork(nn.Module):#Value
-    def __init__(self, input_dims, alpha, fc1_dims, fc2_dims, chkpt_dir):
+    def __init__(self, obs_dim, alpha, fc1_dims, fc2_dims, chkpt_dir):
         super(PPOCriticNetwork, self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'critic_torch_ppo')
         #Feedfoward neural netowrk for estimating the state-value function V(s)
         self.critic = nn.Sequential(
-                nn.Linear(*input_dims, fc1_dims),
+                nn.Linear(*obs_dim, fc1_dims),
                 nn.ReLU(),
                 nn.Linear(fc1_dims, fc2_dims),
                 nn.ReLU(),
@@ -122,28 +124,45 @@ class PPOCriticNetwork(nn.Module):#Value
         self.load_state_dict(T.load(self.checkpoint_file))
 
 class PPOAgent(Player):
-    def __init__(self, n_actions = 2, input_dims = (2,)):
+    def __init__(
+        self,
+        n_actions,          # Number of action dimensions (e.g., 2 for (x, y) moves)
+        obs_dim,            # Number of dimensions in the observation vector
 
-        #change me for fine tunring
-        self.gamma = 0.99 #
-        self.policy_clip = 0.2 #policy rate of change max
-        self.n_epochs = 100
-        self.gae_lambda = 0.95
-        self.critic_coeff = 0.5
-        self.batch_size=64
-        self.alpha = 0.003 #leanring rate
+        gamma,              # Discount factor for future rewards
+        policy_clip,        # Policy rate of change max
+        n_epochs,           # Per learning update
+        gae_lambda,         # Lambda for Generalized Advantage Estimation (GAE)
+        critic_coeff,       # Weighting for critic loss in total loss
+        alpha,              # Learning rate for both actor and critic
 
-        self.fc1_dims=256 #number of neurons in the first hidden layer
-        self.fc2_dims=256 #number of neurons in the second hidden layer
+        batch_size,         # Number of transitions before learning
+        mini_batch_size,    # Size of each training batch
+        fc1_dims,           # Number of neurons in the first hidden layer
+        fc2_dims,           # Number of neurons in the second hidden layer
+        chkpt_dir,          # Directory to save/load model checkpoints
+        ):
 
-        self.chkpt_dir='tmp/ppo'
-
-        self.observation = input_dims
+        self.gamma = gamma
+        self.policy_clip = policy_clip
+        self.n_epochs = n_epochs
+        self.gae_lambda = gae_lambda
+        self.critic_coeff = critic_coeff
+        self.alpha = alpha
+        self.batch_size = batch_size
+        self.mini_batch_size = mini_batch_size
+        self.fc1_dims = fc1_dims
+        self.fc2_dims = fc2_dims
+        self.chkpt_dir = chkpt_dir
 
         #create networks and memory
-        self.actor = PPOActorNetwork(n_actions, input_dims, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
-        self.critic = PPOCriticNetwork(input_dims, self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
-        self.memory = PPOMemory(self.batch_size)
+        self.actor = PPOActorNetwork(n_actions, (obs_dim,), self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
+        self.critic = PPOCriticNetwork((obs_dim,), self.alpha, self.fc1_dims, self.fc2_dims, self.chkpt_dir)
+        self.memory = PPOMemory(self.mini_batch_size)
+
+        self.lastAction = None
+        self.lastActionProbs = None
+        self.lastActionVals = None
 
     #----MEMORY FUNCTIONS----
     def remember(self, state, action, probs, vals, reward, done):
@@ -160,98 +179,104 @@ class PPOAgent(Player):
         self.critic.load_checkpoint()
 
     def select_action (self):
-        state = T.tensor([self.observation], dtype=T.float).to(self.actor.device) #replace this with the states of the lacuna board
+        state = T.tensor([self.observation], dtype=T.float).to(self.actor.device)
 
         mean, std = self.actor(state)
         dist = T.distributions.Normal(mean, std)
         value = self.critic(state)
-        action = dist.sample()
+        raw_action = dist.sample()
+        action = T.tanh(raw_action)
+        self.lastAction = action
 
-        probs = T.squeeze(dist.log_prob(action)).item()
-        action = T.squeeze(action).item()
-        value = T.squeeze(value).item()
+        # sum over action dimensions
+        log_probs = dist.log_prob(raw_action) - T.log(1 - action.pow(2) + 1e-7)
+        log_probs = log_probs.sum(dim=-1)
+        
+        probs = log_probs.item()
+        action = action.cpu().numpy().reshape(-1)  # Always shape (n_actions,)
 
-        return action, probs, value
+
+        value = value.item()
+        self.lastActionProbs = probs
+        self.lastActionVals = value
+        return action
 
 
     def receive_observation(self, observation, reward, done, info):
         self.observation = observation
-        store_memory()
-        print(f"You got a reward of {reward:0.2f}, is the game done? {done}")
-        if len(self.states) >= batch_size:
+
+        if self.lastAction is not None:
+            self.remember(observation, self.lastAction, self.lastActionProbs, self.lastActionVals, reward, done)
+
+        if len(self.memory) >= self.batch_size:
             self.learn()
-
-
-    def plot_learning_curve(x, scores, figure_file):
-        running_avg = np.zeros(len(scores))
-        for i in range(len(running_avg)):
-            running_avg[i] = np.mean(scores[max(0, i-100):(i+1)])
-        plt.plot(x, running_avg)
-        plt.title('Running average of previous 100 scores')
-        plt.savefig(figure_file)  
 
     def save(self, filepath):
         print(f"SAVE ME!!!!!!!!! (Later)")
 
     #main leanring fubnction, call this to train model
     def learn(self):
-        #get training data from memory
+        # get training data from memory
         for _ in range(self.n_epochs):
-            state_arr, action_arr, old_prob_arr, vals_arr,reward_arr, dones_arr, batches = self.memory.generate_batches()
+            state_arr, action_arr, old_prob_arr, vals_arr, reward_arr, dones_arr, batches = self.memory.generate_batches()
 
             values = vals_arr
 
-            #Calculte Advantage using GAE(Gneneralised Advantage Estimation)
+            # Calculate Advantage using GAE (Generalised Advantage Estimation)
             advantage = np.zeros(len(reward_arr), dtype=np.float32)
 
             for t in range(len(reward_arr)-1):
                 discount = 1
                 a_t = 0
                 for k in range(t, len(reward_arr)-1):
-                    a_t += discount*(reward_arr[k] + self.gamma*values[k+1]*\
-                            (1-int(dones_arr[k])) - values[k])
-                    discount *= self.gamma*self.gae_lambda
-                advantage[t] = a_t #advantage[t] = how much better the taken action was than expected
-            
-            #Convert to PyTorch tensor
-            advantage = T.tensor(advantage).to(self.actor.device)
-            values = T.tensor(values).to(self.actor.device)
+                    a_t += discount * (reward_arr[k] + self.gamma * values[k+1] * (1 - int(dones_arr[k])) - values[k])
+                    discount *= self.gamma * self.gae_lambda
+                advantage[t] = a_t
 
-            #loop over minibatches
+            # Convert arrays to PyTorch tensors
+            advantage = T.tensor(advantage, dtype=T.float32).to(self.actor.device)
+            values = T.tensor(values, dtype=T.float32).to(self.actor.device)
+
+            # Pre-convert all arrays to np.arrays for indexing
+            state_arr = np.array(state_arr)
+            action_arr = np.array(action_arr)
+            old_prob_arr = np.array(old_prob_arr)
+
+            # loop over minibatches
             for batch in batches:
-                #sample batch
-                states = T.tensor(state_arr[batch], dtype=T.float).to(self.actor.device)
-                old_probs = T.tensor(old_prob_arr[batch]).to(self.actor.device)
-                actions = T.tensor(action_arr[batch]).to(self.actor.device)
+                states = T.tensor(state_arr[batch], dtype=T.float32).to(self.actor.device)
+                old_probs = T.tensor(old_prob_arr[batch], dtype=T.float32).to(self.actor.device)
+                actions = T.tensor(action_arr[batch], dtype=T.float32).to(self.actor.device)
 
-                #get new policy and value estimations using networks
-                dist = self.actor(states) #get new action distribution
-                critic_value = self.critic(states)
-                critic_value = T.squeeze(critic_value) #flatten critic output
+                # get new policy and value estimations using networks
+                mean, std = self.actor(states)
+                dist = T.distributions.Normal(mean, std)
+                critic_value = self.critic(states).squeeze()
 
-                #PPO Ratio and Clipping
-                new_probs = dist.log_prob(actions)
-                prob_ratio = new_probs.exp() / old_probs.exp() # this is the policy ratio equation
+                # PPO Ratio and Clipping
+                new_probs = dist.log_prob(actions).sum(dim=-1)  # sum over action dimensions
+                prob_ratio = new_probs.exp() / old_probs.exp()
 
-                #Clipped Surrogate loss to prevent big jumps in policy update
+                # Clipped surrogate loss
                 weighted_probs = advantage[batch] * prob_ratio
-                weighted_clipped_probs = T.clamp(prob_ratio, 1-self.policy_clip,
-                        1+self.policy_clip)*advantage[batch]
-                actor_loss = -T.min(weighted_probs, weighted_clipped_probs).mean() #clipped surrogate loss equation
+                weighted_clipped_probs = T.clamp(prob_ratio, 1 - self.policy_clip, 1 + self.policy_clip) * advantage[batch]
+                actor_loss = -T.min(weighted_probs, weighted_clipped_probs).mean()
 
-                #critic loss (MSE between returns and value estimates)
+                # critic loss
                 returns = advantage[batch] + values[batch]
-                critic_loss = (returns-critic_value)**2
+                critic_loss = (returns - critic_value) ** 2
                 critic_loss = critic_loss.mean()
 
-                #Backproperate combined loss
-                total_loss = actor_loss + self.critic_coeff*critic_loss
+                # backprop
+                total_loss = actor_loss + self.critic_coeff * critic_loss
                 self.actor.optimizer.zero_grad()
                 self.critic.optimizer.zero_grad()
                 total_loss.backward()
                 self.actor.optimizer.step()
                 self.critic.optimizer.step()
 
-        #clear memort after update
         self.memory.clear_memory()
 
+
+if __name__ == '__main__':
+    print("OI YOU CANT RUN THE CODE FROM HERE! RUN IT FROM THE MAIN YOU SMALL SMOOTH BRAINED INDIVIDUAL!!")
