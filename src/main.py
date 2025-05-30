@@ -8,9 +8,11 @@ import utils
 import json
 import argparse
 
+from PIL import Image
+import io
 
 
-def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
+def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False, gifGameFilename = None):
     '''Play a game of Lacuna with the given players and environment.'''
     observation = gameEnv.get_observation()
     #print(f"the observation recived is: {observation}")
@@ -24,6 +26,8 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
 
     players = [playerA, playerB]
     total_rewards = [0.0, 0.0] # player A, B total rewards
+
+    gameFrames = []
 
     while not gameEnv.is_game_finished():
         for i, player in enumerate(players):
@@ -45,15 +49,41 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
                 print(f"Player {i} - {player} entered ({x:0.2f}, {x:0.2f}) for a reward of {reward:0.3f}")
                 pass
 
+            fig, ax = gameEnv.view_board()
             if viewGame:
-                fig, ax = gameEnv.view_board()
                 plt.show()
+
+            # save the game frame as an image
+            if gifGameFilename is not None:
+                buf = io.BytesIO()  # Create an in-memory buffer
+                fig.savefig(buf, format='png', bbox_inches='tight')  # Save the figure to the buffer
+                buf.seek(0)  # Rewind the buffer to the beginning
+                img = Image.open(buf)  # Open the buffer as a Pillow image
+                plt.close(fig)  # Close the figure to free memory
+                gameFrames.append(img)  # Append the image to the list
 
     winner = 1 if gameEnv.calculate_winner() else 0
 
     if verbose:
         print(f"Game finished! {gameEnv.calculate_winner()}, {playerA if gameEnv.calculate_winner() else playerB} wins!")
         print(f"Players have {gameEnv.userFlowers} flowers\n")
+
+    # stich all images together into one GIF
+    if gifGameFilename is not None:
+        # append the last image a few times so it stays on screen longer
+        for _ in range(5):
+            gameFrames.append(gameFrames[-1])
+
+        # Save the frames as a GIF
+        gameFrames[0].save(
+            f"{gifGameFilename}.gif",
+            format="GIF",
+            append_images=gameFrames[1:],
+            save_all=True,
+            duration=450, # time per frame [ms]
+            loop=0, # loop forever
+            optimize=True
+        )
 
     return total_rewards, winner
 
@@ -136,6 +166,11 @@ if __name__ == "__main__":
         print("Loading existing models...")
         ppoAgent.load(f"models/{ppoAgent}")
         sacAgent.load(f"models/{sacAgent}")
+
+    for i in range(2):
+        play_game(LacunaBoard(new_random_lacuna_tokens()), rndAgent, sacAgent, viewGame=False,
+              verbose=args.verbose, gifGameFilename=f"out/game{rndAgent}_{sacAgent}_{i:03}")
+    exit() # early exit for just exporting gifs
 
     start_time = time.time()
     train_models(args.episodes, sacAgent, sacAgent, viewGame=args.show,
