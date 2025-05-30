@@ -34,6 +34,8 @@ Detailed below, with flag abbreviations annotated in **bold**.
 | -**-s**how     | `bool False` | Should there be a visual representation of the board after each turn? |
 | -**-l**oad     | `bool False` | Existing              |
 | -**-e**pisodes | `int 10_000` | The number of episodes (games) to train the models on |
+| -**-r**ecord   | `bool True`  | If the games should be saved as they are played (turn off with `--no-record`)|
+| -**-h**elp     |              | Displays information about these CLargs, then exits |
 
 ## Resources
 - [Rublisher website, including rules PDF and video](https://www.cmyk.games/products/lacuna)
