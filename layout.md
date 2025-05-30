@@ -21,10 +21,12 @@ As the state and action space is continious,
 Deep RL algorithms were decidedly the most effective.
 
 ### Proximal Policy Optimization (PPO)[\[4\]](https://arxiv.org/abs/1707.06347)
-<!-- TODO add bits here -->
-PPO was implemented
-- The agent struggled to learn effective strategies in the Lacuna environment, likely due to the continuous and adversarial nature of the action space.
+PPO was implemented however the agent struggled to learn effective strategies in the Lacuna environment, likely due to the continuous and adversarial nature of the action space.
 
+The model uses an Actor-Critic network to learn a policy and learn a value function respectively. For the neural networks of the PPO a first and second hidden layer size of 256 and updated its networks in batches.
+The batch size was set to 2048 so after enough observations were received the network would be updated using this data and a mini-batch with size 64.
+
+The rest of the values used for the PPO model were heuristic values used in other PPO models.
 
 ![PPO vs PPO plot](/images/ppo_ppo.jpg)
 ![SAC vs PPO plot](/images/sac_ppo.jpg)
