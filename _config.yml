@@ -1,0 +1,6 @@
+title: Lacuna with Deep Reinforcment Learning
+description: Two deep RL agents learn to play the game Lacuna against each other
+markdown: kramdown
+theme: minima
+show_excerpts: false
+paginate: false
