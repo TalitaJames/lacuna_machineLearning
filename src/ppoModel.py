@@ -212,10 +212,20 @@ class PPOAgent(Player):
             self.learn()
 
     def save(self, filepath):
-        print(f"SAVE ME!!!!!!!!! (Later)")
+        '''Save the actor and critic networks to a file.'''
+        T.save({
+            # 'actor_state_dict': self.actor.state_dict(),
+            # 'critic_state_dict': self.critic.state_dict(),
+        }, filepath)
+        print(f"Saved PPO agent networks to {filepath}")
 
     def load(self, filepath):
-        print(f"SAVE ME!!!!!!!!! (Later)") 
+        '''Load the actor and critic networks from a file.'''
+        checkpoint = T.load(filepath, map_location=self.device)
+        # self.actor.load_state_dict(checkpoint['actor_state_dict'])
+        # self.critic.load_state_dict(checkpoint['critic_state_dict'])
+
+        print(f"Loaded PPO agent networks from {filepath}")
 
     #main leanring fubnction, call this to train model
     def learn(self):
