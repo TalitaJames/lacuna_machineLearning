@@ -4,7 +4,6 @@ title: Lacuna with Deep RL
 ---
 
 # Deep Reinforcment Learning agents to play Lacuna
-<!-- TODO: flowchart for portfolio -->
 
 ## Abstract
 Lacuna[\[1\]](https://www.cmyk.games/products/lacuna) is a two-player,
@@ -12,6 +11,7 @@ perfect information board game where flowers are randomly distributed in a conti
 Players alternate turns, strategically placing their tokens to claim the most flowers.
 
 This project explores the development and evaluation of two deep reinforcement learning (RL) agents, PPO and SAC to compete at this game. Our objective was to investigate the effectiveness of modern RL algorithms in a spatial, adversarial game setting.
+All code may be found [on github](https://github.com/TalitaJames/lacuna_machineLearning)
 
 ![](images/RandomPlayer_SACAgent.gif)
 
