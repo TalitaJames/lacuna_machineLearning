@@ -1,4 +1,9 @@
-# Information for portfolio:
+---
+layout: default
+title: Lacuna with Deep RL
+---
+
+# Deep Reinforcment Learning agents to play Lacuna
 <!-- TODO: flowchart for portfolio -->
 
 ## Abstract
@@ -14,7 +19,10 @@ The game played with random agent (Blue) against a sac agent (Red)
 
 ## Video
 <iframe width="560" height="315"
-src="https://www.youtube.com/watch?v=0Wa6__TQJ3M frameborder="0" allowfullscreen>
+src="https://www.youtube.com/embed/0Wa6__TQJ3M?si=UHM4pXC_KFYJ_w-x"
+title="YouTube video player" frameborder="0" allow="accelerometer; autoplay;
+clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
 </iframe>
 
 ## Approach
