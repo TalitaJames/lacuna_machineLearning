@@ -8,7 +8,9 @@ Players alternate turns, strategically placing their tokens to claim the most fl
 
 This project explores the development and evaluation of two deep reinforcement learning (RL) agents, PPO and SAC to compete at this game. Our objective was to investigate the effectiveness of modern RL algorithms in a spatial, adversarial game setting.
 
+![](images/RandomPlayer_SACAgent.gif)
 
+The game played with random agent (Blue) against a sac agent (Red)
 
 ## Video
 <iframe width="560" height="315"
