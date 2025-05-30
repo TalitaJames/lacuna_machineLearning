@@ -2,7 +2,7 @@
 <!-- TODO: flowchart for portfolio -->
 
 ## Abstract
-[Lacuna](https://www.cmyk.games/products/lacuna) is a two-player,
+Lacuna[\[1\]](https://www.cmyk.games/products/lacuna) is a two-player,
 perfect information board game where flowers are randomly distributed in a continuous space.
 Players alternate turns, strategically placing their tokens to claim the most flowers.
 
@@ -20,49 +20,57 @@ We implemented two AI models, each extending from a common player base class.
 As the state and action space is continious,
 Deep RL algorithms were decidedly the most effective.
 
-### Proximal Policy Optimization (PPO)
-- PPO was implemented as a baseline RL agent.
+### Proximal Policy Optimization (PPO)[\[4\]](https://arxiv.org/abs/1707.06347)
+<!-- TODO add bits here -->
+PPO was implemented
 - The agent struggled to learn effective strategies in the Lacuna environment, likely due to the continuous and adversarial nature of the action space.
 
-### Soft Actor-Critic (SAC)
-- The SAC agent demonstrated a better understanding of the game mechanics and consistently played valid moves.
-- However, neither agent achieved a win rate significantly above 50%, suggesting that both agents learned at a similar pace.
-- The results also indicate a potential inherent bias in the game favoring the second player, as observed in self-play experiments.
 
-### PPO
-- Struggled to
+![PPO vs PPO plot](/images/ppo_ppo.jpg)
+![SAC vs PPO plot](/images/sac_ppo.jpg)
 
-### SAC
-- Played the game properly
-- Didn't win over 50%
-- Think this is because they both learnt more
-- and the game is inherently biased towards the last player
+
+### Soft Actor-Critic (SAC)[\[3\]](https://arxiv.org/abs/1812.05905)
+The SAC agent was the only agent able to improve its reward when
+playing in the second players place.
+It learnt more than PPO earlier on, as it has a clamping function,
+designed to limit the action space to only valid output.
+
+![PPO vs SAC plot](/images/ppo_sac.jpg)
+
+When against itself, both players improved their plays,
+however there was some dropoff reward, likely due to the second player catching up
+and making moves that limit the first.
+
+![SAC vs SAC plot](/images/sac_sac.jpg)
 
 ## Results
-<!-- What happened? -->
+
+SAC was able to undertand the rules and scope of the game significantly faster than PPO.
+I think this is because having an off-policy approach allows for past learning
+to be useful in the continualy developing game enviroment.
+However neither agent was able to win games over over 60% of the time,
+likely due to the games enherant bias towards the
+first player[\[2\]](https://www.reddit.com/r/boardgames/comments/187cqiu/lacuna/).
+
+Both agents struggled to understand the game in the earlier stages,
+as they recive a large reward for winning, only on the last turn.
+Future progress will try RL models that involve a backpropogating stage,
+such as Monte Carlo Tree Search (MCTS)
 
 
-<!-- Future work? -->
-
-<!-- 
-## Results
-
-- Both agents were able to learn the rules and valid actions of Lacuna through self-play.
-- The SAC agent outperformed PPO in terms of valid move selection and overall gameplay quality.
-- Despite improvements, neither agent dominated the other, highlighting the challenge of learning optimal strategies in this environment.
-- The project also identified reproducibility and stability challenges when training RL agents in continuous, adversarial games.
-
-## Future Work
-
-- Investigate alternative RL algorithms or hybrid approaches to improve agent performance.
-- Explore curriculum learning or reward shaping to accelerate learning.
-- Analyze the impact of game mechanics and initial conditions on agent strategies and outcomes.
-- Extend the framework to support human-vs-agent play and further evaluation. -->
+In future development, we reccomend the following considerderations
+- Implementing a descretised agent to compare against continious space agents.
+- Add consideration about the mechanics and impact turn order has on the game.
+- Given a game state, analysis of flower distribution might help in providing
+a prediction of the winner, and key contestable clusters of flowers
+    - Other interesting metrics might include which flowers are likely
+    to be easy to win in both the placement and end of game phases.
 
 
 
 ## Resources
-- [Rublisher website, including rules PDF and video](https://www.cmyk.games/products/lacuna)
-- [Lacuna strategy discussion by game designer \[reddit\]](https://www.reddit.com/r/boardgames/comments/187cqiu/lacuna/)
-- [SAC implementation paper](https://arxiv.org/abs/1812.05905)
-- [PPO implementation paper](https://arxiv.org/abs/1707.06347)
+1. [Rublisher website, including rules PDF and video](https://www.cmyk.games/products/lacuna)
+2. [Lacuna strategy discussion by game designer \[reddit\]](https://www.reddit.com/r/boardgames/comments/187cqiu/lacuna/)
+3. [SAC implementation paper](https://arxiv.org/abs/1812.05905)
+4. [PPO implementation paper](https://arxiv.org/abs/1707.06347)
