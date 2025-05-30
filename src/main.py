@@ -33,8 +33,9 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
                 if gameEnv.is_valid_action(x, y):
                     badAction = False
                 else:
-                    print(f"{player} selected ({x:0.2f}, {y:0.2f}), which isn't valid")
-                    player.receive_observation(observation, -50, False, {})
+                    if verbose:
+                        print(f"Player {i} - {player} selected ({x:0.2f}, {y:0.2f}), which isn't valid")
+                    player.receive_observation(observation, -50, False, {'status': 'invalid_action'})
 
             observation, reward, done, info = gameEnv.take_turn(x, y)
             player.receive_observation(observation, reward, done, info)
@@ -52,7 +53,7 @@ def play_game(gameEnv, playerA, playerB, viewGame=False, verbose=False):
 
     if verbose:
         print(f"Game finished! {gameEnv.calculate_winner()}, {playerA if gameEnv.calculate_winner() else playerB} wins!")
-        print(f"Players have {gameEnv.userFlowers} flowers")
+        print(f"Players have {gameEnv.userFlowers} flowers\n")
 
     return total_rewards, winner
 
